@@ -1,0 +1,27 @@
+import {
+  Home,
+  PackagePlus,
+  ClipboardList,
+  Search,
+  Bell,
+  Users,
+  CheckSquare,
+  ListPlus,
+} from 'lucide-react'
+
+const ITEMS = {
+  inicio: { label: 'Inicio', href: '/inicio', icon: Home },
+  ingreso: { label: 'Registrar Ingreso de Lote', href: '/ingreso', icon: PackagePlus },
+  requerimientos: { label: 'Registrar Requerimiento', href: '/requerimientos', icon: ClipboardList },
+  inventario: { label: 'Consulta de Inventario', href: '/inventario', icon: Search },
+  alertas: { label: 'Alertas y Monitoreo', href: '/alertas', icon: Bell },
+  usuarios: { label: 'Gestión de Usuarios', href: '/usuarios', icon: Users },
+  responsabilidades: { label: 'Asignar Responsabilidades', href: '/responsabilidades', icon: CheckSquare },
+  insumosRegistro: { label: 'Registrar Insumo', href: '/insumosRegistro', icon: ListPlus },
+}
+
+export const NAV_BY_ROLE = {
+  jefe: [ITEMS.inicio, ITEMS.insumosRegistro, ITEMS.inventario, ITEMS.usuarios, ITEMS.responsabilidades],
+  supervisor: [ITEMS.inicio, ITEMS.requerimientos, ITEMS.inventario, ITEMS.alertas],
+  operario: [ITEMS.inicio, ITEMS.ingreso, ITEMS.requerimientos, ITEMS.inventario],
+}
