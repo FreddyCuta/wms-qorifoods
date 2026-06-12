@@ -7,6 +7,7 @@ import {
   Users,
   CheckSquare,
   ListPlus,
+  Boxes,
 } from 'lucide-react'
 
 // Catálogo de todas las rutas disponibles en la app
@@ -19,6 +20,7 @@ const ITEMS = {
   usuarios: { label: 'Gestión de Usuarios', href: '/usuarios', icon: Users },
   responsabilidades: { label: 'Asignar Responsabilidades', href: '/responsabilidades', icon: CheckSquare },
   insumosRegistro: { label: 'Registrar Insumo', href: '/insumosRegistro', icon: ListPlus },
+  almacen3d: { label: 'Visualización 3D', href: '/almacen-3d', icon: Boxes },
 }
 
 // Navegación filtrada por rol — cada rol ve solo las rutas que le corresponden
@@ -26,7 +28,7 @@ const ITEMS = {
 //   • supervisor → operaciones (requerimientos, inventario, alertas)
 //   • operario   → táctico (ingreso de lotes, requerimientos, inventario)
 export const NAV_BY_ROLE = {
-  jefe: [ITEMS.inicio, ITEMS.insumosRegistro, ITEMS.inventario, ITEMS.usuarios, ITEMS.responsabilidades],
-  supervisor: [ITEMS.inicio, ITEMS.requerimientos, ITEMS.inventario, ITEMS.alertas],
-  operario: [ITEMS.inicio, ITEMS.ingreso, ITEMS.requerimientos, ITEMS.inventario],
+  jefe: [ITEMS.inicio, ITEMS.insumosRegistro, ITEMS.inventario, ITEMS.almacen3d, ITEMS.usuarios, ITEMS.responsabilidades],
+  supervisor: [ITEMS.inicio, ITEMS.requerimientos, ITEMS.inventario, ITEMS.almacen3d, ITEMS.alertas],
+  operario: [ITEMS.inicio, ITEMS.ingreso, ITEMS.requerimientos, ITEMS.inventario, ITEMS.almacen3d],
 }
