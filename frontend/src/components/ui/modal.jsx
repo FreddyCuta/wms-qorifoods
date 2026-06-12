@@ -1,6 +1,8 @@
 import { X } from 'lucide-react'
 import { cn } from '../../lib/utils.js'
 
+// Modal genérico reutilizable. Se controla con open/onClose, recibe un título y un ancho configurable (por defecto 520px).
+// El fondo oscuro (overlay) cierra el modal al hacer clic fuera, y el botón de cerrar permite cerrarlo manualmente.
 export function Modal({ open, onClose, title, children, width = 520 }) {
   if (!open) return null
   return (
@@ -35,6 +37,7 @@ export function Modal({ open, onClose, title, children, width = 520 }) {
   )
 }
 
+// Footer del modal, alineado a la derecha. Se usa para poner los botones de acción (confirmar/cancelar).
 export function ModalFooter({ children }) {
   return (
     <div className={cn('mt-6 flex items-center justify-end gap-2')}>

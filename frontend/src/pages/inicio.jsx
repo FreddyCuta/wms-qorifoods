@@ -10,6 +10,7 @@ export default function InicioPage() {
   const { currentUser } = useApp()
   if (!currentUser) return null
   return (
+    // Home — AppShell sin allowedRoles porque todos entran, el contenido cambia según el rol
     <AppShell title="Inicio">
       {currentUser.role === 'operario' ? (
         <OperarioDashboard />
@@ -22,6 +23,7 @@ export default function InicioPage() {
   )
 }
 
+// Tareas pendientes del usuario logueado — filtramos por assigneeId y status
 function MyPending() {
   const { currentUser, tasks } = useApp()
   const mine = tasks.filter((t) => t.assigneeId === currentUser?.id)
@@ -55,6 +57,7 @@ function MyPending() {
   )
 }
 
+// Dashboard del operario — solo ve sus tareas pendientes, nada más
 function OperarioDashboard() {
   const { currentUser } = useApp()
   return (
@@ -68,6 +71,7 @@ function OperarioDashboard() {
   )
 }
 
+// Dashboard del supervisor — sus pendientes más KPIs de alertas y requerimientos
 function SupervisorDashboard() {
   const { currentUser, activeAlertCount, pendingReqCount } = useApp()
   const navigate = useNavigate()
@@ -81,6 +85,7 @@ function SupervisorDashboard() {
 
       <MyPending />
 
+      {/* Tarjetas de resumen — acceso rápido a alertas y requerimientos pendientes */}
       <div className="mt-8 grid gap-3 sm:grid-cols-2">
         <KpiWidget
           icon={<AlertTriangle className="size-5 text-critical" />}
@@ -103,6 +108,7 @@ function SupervisorDashboard() {
   )
 }
 
+// Dashboard del jefe — visión general del inventario, nada operativo
 function JefeDashboard() {
   const { currentUser, inventory } = useApp()
   const lotes = inventory.length + 141

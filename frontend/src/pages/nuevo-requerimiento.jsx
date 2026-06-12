@@ -21,17 +21,20 @@ function newRow() {
   return { id: Math.random().toString(36).slice(2), insumo: '', cantidad: '' }
 }
 
+// Página para crear un nuevo requerimiento de producción — solo supervisores
 export default function NuevoRequerimientoPage() {
   const { addToast } = useApp()
   const navigate = useNavigate()
   const [numero, setNumero] = useState('')
   const [fecha, setFecha] = useState('')
+  // Filas de insumos solicitados — arranca con dos ejemplos precargados
   const [rows, setRows] = useState([
     { id: 'r1', insumo: 'Sémola de trigo', cantidad: '500' },
     { id: 'r2', insumo: 'Harina de trigo', cantidad: '300' },
   ])
   const [submitted, setSubmitted] = useState(false)
 
+  // Validación del número de requerimiento — hardcodeamos REQ-047 como duplicado de ejemplo
   const duplicateNumero = numero.trim() === 'REQ-047'
   const noItems = rows.length === 0
   const numeroError = submitted
@@ -49,6 +52,7 @@ export default function NuevoRequerimientoPage() {
   function handleSubmit(e) {
     e.preventDefault()
     setSubmitted(true)
+    // Valida que todo esté correcto antes de registrar: número único, al menos un insumo, cantidades válidas
     const hasQtyError = rows.some((r) => !r.cantidad || Number(r.cantidad) <= 0)
     if (!numero.trim() || duplicateNumero || noItems || hasQtyError) return
     addToast('Requerimiento registrado correctamente.')

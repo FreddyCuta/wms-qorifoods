@@ -2,11 +2,15 @@ import { useNavigate } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
 
+// Barra superior fija. Muestra el título de la pantalla, el botón de alertas de reabastecimiento
+// (visible solo para jefe/supervisor) y el nombre del usuario activo.
 export function Topbar({ title }) {
   const { currentUser, activeAlertCount } = useApp()
   const navigate = useNavigate()
   if (!currentUser) return null
 
+  // La campana de alertas solo se muestra para jefe y supervisor porque el operario
+  // no gestiona reabastecimientos — no tiene sentido mostrarle notificaciones que no puede atender.
   const showBell = currentUser.role === 'jefe' || currentUser.role === 'supervisor'
 
   return (

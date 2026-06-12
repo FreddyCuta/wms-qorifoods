@@ -13,13 +13,14 @@ export default function LoginPage() {
   const [show, setShow] = useState(false)
   const [error, setError] = useState('none')
 
-  // If already logged in, redirect to inicio
+  // Si ya hay sesión activa, lo mandamos directo al inicio — ni le mostramos el login
   if (currentUser) return <Navigate to="/inicio" replace />
 
   function handleSubmit(e) {
     e.preventDefault()
     const email = emailRef.current?.value ?? ''
     const password = passwordRef.current?.value ?? ''
+    // Busca en el mock de USERS — por ahora no hay backend, así que validamos contra data.js nomás
     const user = USERS.find((u) => u.email === email.trim().toLowerCase())
     if (!user || user.password !== password) {
       setError('credentials')
@@ -37,7 +38,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      {/* Left brand panel */}
+      {/* Panel izquierdo — la marca, básicamente el escaparate de Qori Foods */}
       <div className="flex flex-col items-center justify-center gap-4 bg-brand px-8 py-16 text-center md:w-1/2">
         <img src="/images/LOGO-QORI.png" alt="Qori Foods" className="h-16 w-auto" />
         <h1 className="text-4xl font-bold text-primary">WMS Qori Foods</h1>
@@ -45,7 +46,7 @@ export default function LoginPage() {
         <div className="h-px w-24 bg-primary" />
       </div>
 
-      {/* Right login panel */}
+      {/* Panel derecho — formulario de login */}
       <div className="flex flex-1 items-center justify-center bg-background px-6 py-16">
         <form onSubmit={handleSubmit} className="w-full max-w-[480px]" noValidate>
           <h2 className="text-2xl font-bold text-foreground">Iniciar sesión</h2>

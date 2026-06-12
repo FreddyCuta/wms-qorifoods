@@ -1,5 +1,7 @@
 import { cn } from '../../lib/utils.js'
 
+// Wrapper de formulario que muestra una label, el input hijo y un mensaje de error opcional.
+// Se usa como contenedor para TextInput, SelectInput y TextArea.
 export function Field({ label, error, children, className }) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
@@ -10,6 +12,8 @@ export function Field({ label, error, children, className }) {
   )
 }
 
+// Clases base compartidas entre TextInput, SelectInput y TextArea para mantener consistencia visual.
+// Todas usan el mismo alto, border-radius, padding y estilos de focus.
 const baseInput =
   'h-9 w-full rounded-md border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20'
 

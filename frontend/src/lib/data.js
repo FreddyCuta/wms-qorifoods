@@ -1,3 +1,8 @@
+// ========================
+// Datos mock del sistema
+// ========================
+
+// Usuarios de prueba — jefe, supervisor y operarios con sus credenciales
 export const USERS = [
   { id: 'u1', name: 'María Flores', email: 'maria@qorifoods.com', password: 'jefe123', role: 'jefe', active: true },
   { id: 'u2', name: 'Pedro Salas', email: 'pedro@qorifoods.com', password: 'super123', role: 'supervisor', active: true },
@@ -6,6 +11,7 @@ export const USERS = [
   { id: 'u5', name: 'Ana Torres', email: 'ana@qorifoods.com', password: 'super123', role: 'supervisor', active: false },
 ]
 
+// Catálogo de insumos — lo usa el jefe para registrar nuevos materiales y el operario al crear requerimientos
 export const INSUMOS = [
   { nombre: 'Sémola de trigo', proveedor: 'Molinos del Norte SAC', unidad: 'kg', puntoReorden: 100 },
   { nombre: 'Harina de trigo', proveedor: 'Industrias Unidas SAC', unidad: 'kg', puntoReorden: 80 },
@@ -15,6 +21,7 @@ export const INSUMOS = [
   { nombre: 'Quinua orgánica', proveedor: 'Andes Orgánicos SAC', unidad: 'kg', puntoReorden: 150 },
 ]
 
+// Ubicaciones físicas del almacén (pasillo / rack / nivel) — acá se asignan los lotes
 export const UBICACIONES = [
   'Pasillo A – Rack 1 – Nivel 1',
   'Pasillo A – Rack 2 – Nivel 1',
@@ -24,6 +31,8 @@ export const UBICACIONES = [
   'Pasillo D – Rack 2 – Nivel 1',
 ]
 
+// Inventario actual por lote — el corazón del sistema, visible para todos los roles
+// Cada lote traza: insumo, proveedor, ubicación, cantidad, vencimiento y quién lo registró
 export const INVENTORY = [
   {
     id: 'l1', insumo: 'Sémola de trigo', codigoLote: 'LOT-2026-0018', cantidad: 700, unidad: 'kg',
@@ -57,6 +66,7 @@ export const INVENTORY = [
   },
 ]
 
+// Requerimientos de insumos — los crea el operario, los atiende el supervisor
 export const REQUIREMENTS = [
   {
     id: 'r1', numero: 'REQ-047', fechaSolicitud: '05/06/2026', fechaRegistro: '05/06/2026 08:30',
@@ -92,6 +102,8 @@ export const REQUIREMENTS = [
   },
 ]
 
+// Alertas de stock bajo — se disparan cuando un insumo cae por debajo del punto de reorden
+// Las ve el supervisor y puede marcarlas como atendidas
 export const ALERTS = [
   {
     id: 'a1', insumo: 'Sémola de trigo', stockActual: 80, puntoReorden: 300, unidad: 'kg',
@@ -107,6 +119,7 @@ export const ALERTS = [
   },
 ]
 
+// Tareas asignadas — las crea el jefe desde "Asignar Responsabilidades" y las completa el operario
 export const TASKS = [
   {
     id: 't1', assigneeId: 'u3', assigneeName: 'Carlos Quispe',

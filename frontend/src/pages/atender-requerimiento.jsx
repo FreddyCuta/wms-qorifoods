@@ -17,6 +17,7 @@ const FEFO = {
   'Sal yodada': { lote: 'LOT-2026-0031', vence: '30/12/2026', ubicacion: 'Pasillo A – Rack 1 – Nivel 1' },
 }
 
+// Página para que el operario registre las salidas de un requerimiento — solo operarios
 export default function AtenderRequerimientoPage() {
   const { id } = useParams()
   const { requirements, attendRequirement, addToast } = useApp()
@@ -34,6 +35,7 @@ export default function AtenderRequerimientoPage() {
     )
   }
 
+  // Calcula el estado de cada salida: si es completa, parcial o pendiente, según lo que el operario ingrese
   const salidas = req.insumos.map((item) => {
     const cantidad = Number(salidaQtys[item.insumo] || 0)
     const esCompleto = cantidad === item.cantidad

@@ -14,6 +14,7 @@ function roleBadge(role) {
   return <Badge color="gray">Operario de Almacén</Badge>
 }
 
+// Gestión de usuarios del sistema — solo el jefe de almacén puede crear, editar o desactivar cuentas
 export default function UsuariosPage() {
   const { users, currentUser, tasks, toggleUserActive, addUser, addToast } = useApp()
   const [modal, setModal] = useState({ kind: 'none' })
@@ -96,6 +97,7 @@ export default function UsuariosPage() {
         </div>
       </div>
 
+      {/* Modal para crear usuario — solo jefe puede, se asigna rol y contraseña */}
       {modal.kind === 'create' && (
         <CreateUserModal
           onClose={() => setModal({ kind: 'none' })}
@@ -106,6 +108,7 @@ export default function UsuariosPage() {
           }}
         />
       )}
+      {/* Modal para editar — no se puede cambiar el email, solo nombre, rol y password */}
       {modal.kind === 'edit' && (
         <EditUserModal
           user={modal.user}
@@ -113,6 +116,7 @@ export default function UsuariosPage() {
           onSave={() => { setModal({ kind: 'none' }); addToast('Cambios guardados correctamente.') }}
         />
       )}
+      {/* Modal para desactivar — advierte si el usuario tiene tareas pendientes asignadas */}
       {modal.kind === 'deactivate' && (
         <DeactivateUserModal
           user={modal.user}

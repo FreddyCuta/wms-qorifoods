@@ -5,6 +5,7 @@ import { NAV_BY_ROLE } from '../lib/nav.js'
 import { ROLE_LABEL } from '../lib/types.js'
 import { cn } from '../lib/utils.js'
 
+// Helper para extraer las iniciales del nombre del usuario (hasta 2 palabras)
 export function initials(name) {
   if (!name) return '?'
   return name
@@ -15,12 +16,17 @@ export function initials(name) {
     .toUpperCase()
 }
 
+// Menú lateral izquierdo. Muestra el logo, los enlaces de navegación filtrados según el rol del usuario
+// (usando NAV_BY_ROLE, que está definido en lib/nav.js), y un footer con los datos del usuario activo
+// y el botón de cerrar sesión.
 export function Sidebar({ onLogout }) {
   const { currentUser } = useApp()
   const { pathname } = useLocation()
   const navigate = useNavigate()
   if (!currentUser) return null
 
+  // Los items se obtienen del mapa NAV_BY_ROLE según el rol del usuario.
+  // Cada rol tiene su propio conjunto de rutas, así el operario solo ve lo que le corresponde.
   const items = NAV_BY_ROLE[currentUser.role]
 
   return (

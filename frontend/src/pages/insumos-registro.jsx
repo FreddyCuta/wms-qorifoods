@@ -6,6 +6,8 @@ import { ActionButton } from '../components/ui/action-button.jsx'
 import { Field, SelectInput, TextInput } from '../components/ui/form-field.jsx'
 import { cn } from '../lib/utils.js'
 
+// Registro (y edición) de insumos en el catálogo del sistema — solo jefe
+// El formulario sirve tanto para crear como para editar, dependiendo del estado "editing"
 export default function InsumosRegistroPage() {
   const { addInsumo, updateInsumo, addToast, insumos } = useApp()
   const formRef = useRef(null)
@@ -18,6 +20,7 @@ export default function InsumosRegistroPage() {
 
   const isEditing = editing !== null
 
+  // Al empezar a editar, se cargan los datos del insumo en el formulario
   function startEdit(insumo) {
     setEditing(insumo)
     setNombre(insumo.nombre)
@@ -28,6 +31,7 @@ export default function InsumosRegistroPage() {
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  // Cancela la edición y limpia el formulario
   function cancelEdit() {
     setEditing(null)
     setNombre('')
@@ -37,6 +41,7 @@ export default function InsumosRegistroPage() {
     setErrors({})
   }
 
+  // Validación: nombre obligatorio, sin duplicados (salvo que sea el mismo insumo en edición), proveedor obligatorio, ROP >= 0
   function validateForm() {
     const next = {}
     if (!nombre.trim()) next.nombre = 'Este campo es obligatorio.'
@@ -61,6 +66,7 @@ export default function InsumosRegistroPage() {
   function handleSubmit(e) {
     e.preventDefault()
     if (!validateForm()) return
+    // Si estamos en modo edición, actualiza el insumo existente; si no, crea uno nuevo
     if (isEditing) {
       updateInsumo(editing.nombre, {
         nombre: nombre.trim(),

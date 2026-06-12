@@ -19,6 +19,7 @@ function daysUntil(d) {
   return Math.round((parseDate(d).getTime() - TODAY.getTime()) / 86400000)
 }
 
+// Color según proximidad de vencimiento: rojo si vence en 7 días, amarillo si en 30, normal si falta más
 function vencColor(d) {
   const days = daysUntil(d)
   if (days <= 7) return 'text-critical'
@@ -35,6 +36,8 @@ function groupByInsumo(lots) {
   return Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))
 }
 
+// Página de consulta de inventario — accesible por todos los roles (sin allowedRoles)
+// Muestra los insumos agrupados con su stock total, punto de reorden y estado
 export default function InventarioPage() {
   const [query, setQuery] = useState('')
   const [ubicacion, setUbicacion] = useState('')
@@ -45,6 +48,7 @@ export default function InventarioPage() {
 
   const data = emptyDb ? [] : INVENTORY
 
+  // Agrupa los lotes por insumo y calcula stock total, estado (Normal / Stock bajo / Agotado) y punto de reorden
   const insumosData = useMemo(() => {
     const grouped = groupByInsumo(data)
     return grouped.map(([insumo, lots]) => {
@@ -61,6 +65,7 @@ export default function InventarioPage() {
     })
   }, [data])
 
+  // Filtros aplicados por insumo, ubicación y estado del stock
   const filtered = useMemo(() => {
     return insumosData.filter((item) => {
       const q = applied.query.toLowerCase()
@@ -84,6 +89,7 @@ export default function InventarioPage() {
 
   return (
     <AppShell title="Consulta de Inventario">
+      {/* Panel de filtros — insumo, ubicación, estado y botón para aplicar/buscar */}
       <div className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4">
         <SelectInput value={query} onChange={(e) => setQuery(e.target.value)} className="w-56">
           <option value="">Filtrar por insumo</option>
@@ -179,12 +185,15 @@ export default function InventarioPage() {
   )
 }
 
+// Drawer lateral que se abre al hacer clic en "Ver lotes" — muestra el detalle de cada lote del insumo seleccionado
 function LotesDrawer({ insumo, lots, onClose }) {
   if (!insumo) return null
 
   return (
     <>
+      {/* Overlay oscuro al fondo */}
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} aria-hidden="true" />
+      {/* Panel lateral derecho con la tabla de lotes */}
       <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl flex flex-col overflow-hidden rounded-l-lg border-l border-border bg-card shadow-lg">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="font-semibold text-foreground">Lotes de {insumo}</h2>

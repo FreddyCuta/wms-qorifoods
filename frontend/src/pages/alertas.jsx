@@ -9,6 +9,8 @@ import { TextInput } from '../components/ui/form-field.jsx'
 import { fmt, qty } from '../lib/utils.js'
 import { cn } from '../lib/utils.js'
 
+// Alertas de reabastecimiento — solo supervisores pueden ver y atender
+// Se activan cuando el stock de un insumo está por debajo del punto de reorden
 export default function AlertasPage() {
   const { alerts, currentUser, attendAlert, addToast, activeAlertCount } = useApp()
   const [filter, setFilter] = useState('')
@@ -16,6 +18,7 @@ export default function AlertasPage() {
 
   const isSupervisor = currentUser?.role === 'supervisor'
 
+  // Filtro local por nombre de insumo
   const filtered = useMemo(
     () => alerts.filter((a) => a.insumo.toLowerCase().includes(filter.toLowerCase())),
     [alerts, filter],
@@ -30,6 +33,7 @@ export default function AlertasPage() {
 
   return (
     <AppShell title="Alertas y Monitoreo" allowedRoles={['supervisor']}>
+      {/* Estado vacío — todo en orden, sin alertas activas */}
       {activeAlertCount === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
           <CheckCircle2 className="size-12 text-success" />

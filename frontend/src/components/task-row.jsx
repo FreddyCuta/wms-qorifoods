@@ -2,6 +2,8 @@ import { Check, Circle } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
 import { cn } from '../lib/utils.js'
 
+// Fila de una tarea pendiente. El botón circular hace toggle del estado completado/no completado.
+// Al marcarla como completada se tacha la descripción y se muestra visualmente el cambio.
 export function TaskRow({ task }) {
   const { completeTask } = useApp()
   const done = task.status === 'completada'

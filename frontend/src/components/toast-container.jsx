@@ -2,6 +2,8 @@ import { Check, X } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
 import { cn } from '../lib/utils.js'
 
+// Contenedor flotante de notificaciones temporales (toasts). Se posiciona en la esquina superior derecha
+// y consume el estado global toasts para mostrar mensajes de éxito o error con un icono y botón para cerrar.
 export function ToastContainer() {
   const { toasts, dismissToast } = useApp()
   return (

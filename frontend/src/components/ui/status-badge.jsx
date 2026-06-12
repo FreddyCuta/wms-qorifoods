@@ -1,5 +1,7 @@
 import { cn } from '../../lib/utils.js'
 
+// Mapa de colores predefinidos para el badge. Cada color usa un fondo semitransparente (opacidad 12)
+// y el texto con el color completo, siguiendo el sistema de diseño del proyecto.
 const COLORS = {
   amber: 'bg-warning/12 text-warning',
   green: 'bg-success/12 text-success',
@@ -9,6 +11,8 @@ const COLORS = {
   gray: 'bg-muted text-muted-foreground',
 }
 
+// Badge de estado con respaldo visual según el color elegido. Útil para mostrar estados como
+// "activo", "pendiente", "completado", etc. Por defecto es gris si no se pasa color.
 export function Badge({ color = 'gray', children, className }) {
   return (
     <span

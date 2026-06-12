@@ -9,6 +9,7 @@ import {
   ListPlus,
 } from 'lucide-react'
 
+// Catálogo de todas las rutas disponibles en la app
 const ITEMS = {
   inicio: { label: 'Inicio', href: '/inicio', icon: Home },
   ingreso: { label: 'Registrar Ingreso de Lote', href: '/ingreso', icon: PackagePlus },
@@ -20,6 +21,10 @@ const ITEMS = {
   insumosRegistro: { label: 'Registrar Insumo', href: '/insumosRegistro', icon: ListPlus },
 }
 
+// Navegación filtrada por rol — cada rol ve solo las rutas que le corresponden
+//   • jefe       → gestión completa (insumos, inventario, usuarios, responsabilidades)
+//   • supervisor → operaciones (requerimientos, inventario, alertas)
+//   • operario   → táctico (ingreso de lotes, requerimientos, inventario)
 export const NAV_BY_ROLE = {
   jefe: [ITEMS.inicio, ITEMS.insumosRegistro, ITEMS.inventario, ITEMS.usuarios, ITEMS.responsabilidades],
   supervisor: [ITEMS.inicio, ITEMS.requerimientos, ITEMS.inventario, ITEMS.alertas],

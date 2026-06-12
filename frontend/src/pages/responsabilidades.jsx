@@ -12,11 +12,13 @@ function initials(name) {
   return name.split(' ').slice(0, 2).map((p) => p[0]).join('').toUpperCase()
 }
 
+// Asignación de tareas/responsabilidades a operarios y supervisores — solo jefe
 export default function ResponsabilidadesPage() {
   const { users, tasks, assignTask, addToast } = useApp()
   const [selectedUser, setSelectedUser] = useState(null)
   const [description, setDescription] = useState('')
 
+  // Filtra solo personal activo que no sea jefe — el jefe no se asigna tareas a sí mismo
   const staffUsers = users.filter((u) => u.role !== 'jefe' && u.active)
 
   function pendingTasksFor(userId) {

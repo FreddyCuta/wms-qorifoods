@@ -12,12 +12,14 @@ import UsuariosPage from './pages/usuarios.jsx'
 import ResponsabilidadesPage from './pages/responsabilidades.jsx'
 import InsumosRegistroPage from './pages/insumos-registro.jsx'
 
+// Componente wrapper que redirige al login si no hay sesión activa
 function PrivateRoute({ children }) {
   const { currentUser } = useApp()
   if (!currentUser) return <Navigate to="/" replace />
   return children
 }
 
+// Definición de todas las rutas de la aplicación
 function AppRoutes() {
   return (
     <Routes>
@@ -32,11 +34,13 @@ function AppRoutes() {
       <Route path="/usuarios" element={<PrivateRoute><UsuariosPage /></PrivateRoute>} />
       <Route path="/responsabilidades" element={<PrivateRoute><ResponsabilidadesPage /></PrivateRoute>} />
       <Route path="/insumosRegistro" element={<PrivateRoute><InsumosRegistroPage /></PrivateRoute>} />
+      {/* Catch-all → redirige al login */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
 
+// Entry del router: AppProvider envuelve todo para que el contexto esté disponible globalmente
 export default function App() {
   return (
     <AppProvider>

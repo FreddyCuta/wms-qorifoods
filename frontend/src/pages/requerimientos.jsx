@@ -11,6 +11,8 @@ function statusBadge(estado) {
   return <Badge color="green">Atendido</Badge>
 }
 
+// Listado de requerimientos de producción — solo supervisores y operarios
+// Los supervisores pueden crear nuevos; los operarios solo atenden los pendientes
 export default function RequerimientosPage() {
   const { currentUser, requirements, pendingReqCount } = useApp()
   const navigate = useNavigate()
@@ -24,6 +26,7 @@ export default function RequerimientosPage() {
           <h2 className="text-base font-semibold text-foreground">Listado de Requerimientos</h2>
           <Badge color="amber">{pendingReqCount} pendientes</Badge>
         </div>
+        {/* Botón "Nuevo Requerimiento" solo visible para supervisores */}
         {isSupervisor && (
           <ActionButton onClick={() => navigate('/requerimientos/nuevo')}>
             <Plus className="size-4" />

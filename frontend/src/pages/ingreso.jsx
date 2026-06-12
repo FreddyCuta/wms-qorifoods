@@ -5,6 +5,7 @@ import { AppShell } from '../components/app-shell.jsx'
 import { ActionButton } from '../components/ui/action-button.jsx'
 import { Field, SelectInput, TextInput } from '../components/ui/form-field.jsx'
 
+// Página de registro de ingreso de lotes — solo para operarios
 export default function IngresoPage() {
   const { addToast, currentUser, inventory } = useApp()
   const [insumo, setInsumo] = useState('')
@@ -14,6 +15,7 @@ export default function IngresoPage() {
   const [errors, setErrors] = useState({})
   const [fechaIngreso] = useState(() => new Date().toISOString().split('T')[0])
 
+  // Calcula el siguiente número de lote basado en el último registrado en el inventario
   const nextLotNumber = (() => {
     const maxNum = inventory.reduce((max, lot) => {
       const match = lot.codigoLote.match(/\d+$/)
@@ -34,6 +36,7 @@ export default function IngresoPage() {
 
   function handleSubmit(e) {
     e.preventDefault()
+    // Validación del formulario antes de registrar — los campos críticos son obligatorios
     const next = {}
     if (!insumo) next.insumo = 'Este campo es obligatorio.'
     if (!cantidad || Number(cantidad) <= 0) next.cantidad = 'La cantidad debe ser mayor a cero.'
@@ -57,6 +60,7 @@ export default function IngresoPage() {
       >
         <h2 className="mb-5 text-base font-bold text-foreground">Datos del lote</h2>
 
+        {/* Grid de 2 columnas con los campos del formulario — algunos autocompletados, otros manuales */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <Field label="Insumo" error={errors.insumo}>
             <SelectInput
