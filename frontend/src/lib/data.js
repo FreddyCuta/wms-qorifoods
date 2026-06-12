@@ -1,9 +1,9 @@
 export const USERS = [
-  { id: 'u1', name: 'María Flores', email: 'maria@qorifoods.com', role: 'jefe', active: true },
-  { id: 'u2', name: 'Pedro Salas', email: 'pedro@qorifoods.com', role: 'supervisor', active: true },
-  { id: 'u3', name: 'Carlos Quispe', email: 'carlos@qorifoods.com', role: 'operario', active: true },
-  { id: 'u4', name: 'Luis Mamani', email: 'luis@qorifoods.com', role: 'operario', active: true },
-  { id: 'u5', name: 'Ana Torres', email: 'ana@qorifoods.com', role: 'supervisor', active: false },
+  { id: 'u1', name: 'María Flores', email: 'maria@qorifoods.com', password: 'jefe123', role: 'jefe', active: true },
+  { id: 'u2', name: 'Pedro Salas', email: 'pedro@qorifoods.com', password: 'super123', role: 'supervisor', active: true },
+  { id: 'u3', name: 'Carlos Quispe', email: 'carlos@qorifoods.com', password: 'operario123', role: 'operario', active: true },
+  { id: 'u4', name: 'Luis Mamani', email: 'luis@qorifoods.com', password: 'operario123', role: 'operario', active: true },
+  { id: 'u5', name: 'Ana Torres', email: 'ana@qorifoods.com', password: 'super123', role: 'supervisor', active: false },
 ]
 
 export const INSUMOS = [

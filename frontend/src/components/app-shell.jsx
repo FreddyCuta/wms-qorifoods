@@ -1,18 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../lib/store.jsx'
-import { ROLE_LABEL } from '../lib/types.js'
 import { Sidebar } from './sidebar.jsx'
 import { Topbar } from './topbar.jsx'
 import { ToastContainer } from './toast-container.jsx'
 import { Modal, ModalFooter } from './ui/modal.jsx'
 import { ActionButton } from './ui/action-button.jsx'
-import { cn } from '../lib/utils.js'
-
-const ROLES = ['jefe', 'supervisor', 'operario']
 
 export function AppShell({ title, children, allowedRoles }) {
-  const { currentUser, logout, setRole } = useApp()
+  const { currentUser, logout } = useApp()
   const navigate = useNavigate()
   const [logoutOpen, setLogoutOpen] = useState(false)
 
@@ -36,26 +32,6 @@ export function AppShell({ title, children, allowedRoles }) {
       <main className="ml-60 min-h-screen pt-16">
         <div className="p-8">{children}</div>
       </main>
-
-      {/* Demo role switcher */}
-      <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-md">
-        <span className="px-2 text-xs text-muted-foreground">Demo · Rol:</span>
-        {ROLES.map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => setRole(r)}
-            className={cn(
-              'rounded-full px-3 py-1 text-xs font-medium transition-colors',
-              currentUser.role === r
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-muted',
-            )}
-          >
-            {ROLE_LABEL[r].replace(' de Almacén', '')}
-          </button>
-        ))}
-      </div>
 
       <ToastContainer />
 

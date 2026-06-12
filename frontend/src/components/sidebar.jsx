@@ -26,6 +26,7 @@ export function Sidebar({ onLogout }) {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col bg-sidebar text-sidebar-foreground">
       <div className="px-5 py-5">
+        <img src="/images/LOGO-QORI.png" alt="Qori Foods" className="mb-2 h-8 w-auto" />
         <div className="text-lg font-bold text-primary">WMS Qori Foods</div>
         <div className="text-xs text-sidebar-foreground/60">Almacén de Insumos</div>
       </div>

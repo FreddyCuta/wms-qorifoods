@@ -21,7 +21,7 @@ export default function LoginPage() {
     const email = emailRef.current?.value ?? ''
     const password = passwordRef.current?.value ?? ''
     const user = USERS.find((u) => u.email === email.trim().toLowerCase())
-    if (!user || password.length < 4) {
+    if (!user || user.password !== password) {
       setError('credentials')
       return
     }
@@ -31,7 +31,6 @@ export default function LoginPage() {
     }
     setError('none')
     login(user)
-    // Navigation handled by the redirect above on next render
   }
 
   const credErr = error === 'credentials'
@@ -40,6 +39,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* Left brand panel */}
       <div className="flex flex-col items-center justify-center gap-4 bg-brand px-8 py-16 text-center md:w-1/2">
+        <img src="/images/LOGO-QORI.png" alt="Qori Foods" className="h-16 w-auto" />
         <h1 className="text-4xl font-bold text-primary">WMS Qori Foods</h1>
         <p className="text-sm text-brand-foreground/80">Sistema de Gestión de Almacén de Insumos</p>
         <div className="h-px w-24 bg-primary" />
@@ -113,13 +113,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Demo hint */}
-          <div className="mt-8 rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
-            <p className="mb-1 font-medium text-foreground">Acceso demo</p>
-            <p>Use cualquier contraseña (mín. 4 caracteres) con un correo:</p>
-            <p className="mt-1">maria@qorifoods.com · pedro@qorifoods.com · carlos@qorifoods.com</p>
-            <p className="mt-1">ana@qorifoods.com muestra el estado de cuenta inactiva.</p>
-          </div>
         </form>
       </div>
     </div>
