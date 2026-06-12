@@ -11,6 +11,7 @@ import AlertasPage from './pages/alertas.jsx'
 import UsuariosPage from './pages/usuarios.jsx'
 import ResponsabilidadesPage from './pages/responsabilidades.jsx'
 import InsumosRegistroPage from './pages/insumos-registro.jsx'
+import Almacen3dPage from './pages/almacen-3d.jsx'
 
 // Componente wrapper que redirige al login si no hay sesión activa
 function PrivateRoute({ children }) {
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Route path="/usuarios" element={<PrivateRoute><UsuariosPage /></PrivateRoute>} />
       <Route path="/responsabilidades" element={<PrivateRoute><ResponsabilidadesPage /></PrivateRoute>} />
       <Route path="/insumosRegistro" element={<PrivateRoute><InsumosRegistroPage /></PrivateRoute>} />
+      <Route path="/almacen-3d" element={<PrivateRoute><Almacen3dPage /></PrivateRoute>} />
       {/* Catch-all → redirige al login */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
