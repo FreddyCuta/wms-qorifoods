@@ -35,14 +35,6 @@ export function AppProvider({ children }) {
   const login = useCallback((user) => setCurrentUser(user), [])
   const logout = useCallback(() => setCurrentUser(null), [])
 
-  const setRole = useCallback(
-    (role) => {
-      const found = users.find((u) => u.role === role && u.active)
-      if (found) setCurrentUser(found)
-    },
-    [users],
-  )
-
   const completeTask = useCallback((id) => {
     setTasks((ts) =>
       ts.map((t) =>
@@ -105,6 +97,12 @@ export function AppProvider({ children }) {
     setInsumos((ins) => [...ins, insumo])
   }, [])
 
+  const updateInsumo = useCallback((oldNombre, data) => {
+    setInsumos((ins) =>
+      ins.map((i) => (i.nombre === oldNombre ? { ...i, ...data } : i)),
+    )
+  }, [])
+
   const activeAlertCount = useMemo(
     () => alerts.filter((a) => !a.atendida).length,
     [alerts],
@@ -127,7 +125,6 @@ export function AppProvider({ children }) {
     pendingReqCount,
     login,
     logout,
-    setRole,
     addToast,
     dismissToast,
     completeTask,
@@ -137,6 +134,7 @@ export function AppProvider({ children }) {
     addUser,
     assignTask,
     addInsumo,
+    updateInsumo,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

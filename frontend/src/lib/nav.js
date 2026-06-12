@@ -12,7 +12,7 @@ import {
 const ITEMS = {
   inicio: { label: 'Inicio', href: '/inicio', icon: Home },
   ingreso: { label: 'Registrar Ingreso de Lote', href: '/ingreso', icon: PackagePlus },
-  requerimientos: { label: 'Registrar Requerimiento', href: '/requerimientos', icon: ClipboardList },
+  requerimientos: { label: 'Gestión de Requerimientos', href: '/requerimientos', icon: ClipboardList },
   inventario: { label: 'Consulta de Inventario', href: '/inventario', icon: Search },
   alertas: { label: 'Alertas y Monitoreo', href: '/alertas', icon: Bell },
   usuarios: { label: 'Gestión de Usuarios', href: '/usuarios', icon: Users },
