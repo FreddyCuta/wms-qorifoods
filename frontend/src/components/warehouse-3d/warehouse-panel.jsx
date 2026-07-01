@@ -153,7 +153,7 @@ export function WarehousePanel({
       <Canvas
         key={resetKey}
         shadows
-        camera={{ position: compact ? [12, 8, 12] : [14, 10, 14], fov: compact ? 50 : 45 }}
+        camera={{ position: compact ? [20, 14, 20] : [26, 18, 26], fov: compact ? 50 : 45 }}
         gl={{ antialias: true }}
         dpr={[1, 1.5]}
       >
