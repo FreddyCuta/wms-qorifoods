@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, ClipboardList, Boxes } from 'lucide-react'
+import { AlertTriangle, Boxes } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
 import { ROLE_LABEL } from '../lib/types.js'
 import { AppShell } from '../components/app-shell.jsx'
@@ -71,9 +71,9 @@ function OperarioDashboard() {
   )
 }
 
-// Dashboard del supervisor — sus pendientes más KPIs de alertas y requerimientos
+// Dashboard del supervisor — sus pendientes más KPIs de alertas
 function SupervisorDashboard() {
-  const { currentUser, activeAlertCount, pendingReqCount } = useApp()
+  const { currentUser, activeAlertCount } = useApp()
   const navigate = useNavigate()
 
   return (
@@ -85,8 +85,8 @@ function SupervisorDashboard() {
 
       <MyPending />
 
-      {/* Tarjetas de resumen — acceso rápido a alertas y requerimientos pendientes */}
-      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+      {/* Tarjeta de resumen — acceso rápido a alertas */}
+      <div className="mt-8 grid gap-3 sm:grid-cols-1">
         <KpiWidget
           icon={<AlertTriangle className="size-5 text-critical" />}
           value={activeAlertCount}
@@ -94,14 +94,6 @@ function SupervisorDashboard() {
           label="Alertas de reabastecimiento activas"
           link="Ver alertas →"
           onClick={() => navigate('/alertas')}
-        />
-        <KpiWidget
-          icon={<ClipboardList className="size-5 text-warning" />}
-          value={pendingReqCount}
-          valueColor="text-warning"
-          label="Requerimientos pendientes de atención"
-          link="Ver requerimientos →"
-          onClick={() => navigate('/requerimientos')}
         />
       </div>
     </div>
@@ -111,7 +103,7 @@ function SupervisorDashboard() {
 // Dashboard del jefe — visión general del inventario, nada operativo
 function JefeDashboard() {
   const { currentUser, inventory } = useApp()
-  const lotes = inventory.length + 141
+  const lotes = inventory.length
 
   return (
     <div className="mx-auto max-w-4xl">

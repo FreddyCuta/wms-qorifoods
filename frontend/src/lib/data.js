@@ -13,12 +13,12 @@ export const USERS = [
 
 // Catálogo de insumos — lo usa el jefe para registrar nuevos materiales y el operario al crear requerimientos
 export const INSUMOS = [
-  { nombre: 'Sémola de trigo', proveedor: 'Molinos del Norte SAC', unidad: 'kg', puntoReorden: 100 },
-  { nombre: 'Harina de trigo', proveedor: 'Industrias Unidas SAC', unidad: 'kg', puntoReorden: 80 },
-  { nombre: 'Aceite vegetal', proveedor: 'Distribuidora Lima SAC', unidad: 'L', puntoReorden: 20 },
-  { nombre: 'Sal yodada', proveedor: 'Salinera Perú SAC', unidad: 'kg', puntoReorden: 50 },
-  { nombre: 'Huevos deshidratados', proveedor: 'Avícola Andina SAC', unidad: 'kg', puntoReorden: 200 },
-  { nombre: 'Quinua orgánica', proveedor: 'Andes Orgánicos SAC', unidad: 'kg', puntoReorden: 150 },
+  { nombre: 'Sémola de trigo', proveedor: 'Molinos del Norte SAC', unidad: 'kg', puntoReorden: 100, leadTime: 5 },
+  { nombre: 'Harina de trigo', proveedor: 'Industrias Unidas SAC', unidad: 'kg', puntoReorden: 80, leadTime: 3 },
+  { nombre: 'Aceite vegetal', proveedor: 'Distribuidora Lima SAC', unidad: 'L', puntoReorden: 20, leadTime: 7 },
+  { nombre: 'Sal yodada', proveedor: 'Salinera Perú SAC', unidad: 'kg', puntoReorden: 50, leadTime: 5 },
+  { nombre: 'Huevos deshidratados', proveedor: 'Avícola Andina SAC', unidad: 'kg', puntoReorden: 200, leadTime: 6 },
+  { nombre: 'Quinua orgánica', proveedor: 'Andes Orgánicos SAC', unidad: 'kg', puntoReorden: 150, leadTime: 7 },
 ]
 
 // Ubicaciones físicas del almacén (pasillo / rack / nivel) — acá se asignan los lotes
@@ -66,56 +66,64 @@ export const INVENTORY = [
   },
 ]
 
-// Requerimientos de insumos — los crea el operario, los atiende el supervisor
+// Requerimientos de insumos — los crea el supervisor (cuando producción los solicita), los atiende el operario
+// Cada insumo tiene 'atendido' (cantidad ya despachada acumulada) y el req guarda 'atenciones' (historial de despachos)
 export const REQUIREMENTS = [
   {
     id: 'r1', numero: 'REQ-047', fechaSolicitud: '05/06/2026', fechaRegistro: '05/06/2026 08:30',
     registradoPor: 'Carlos Quispe', estado: 'pendiente',
+    atenciones: [],
     insumos: [
-      { insumo: 'Sémola de trigo', cantidad: 500, unidad: 'kg', stock: 1200 },
-      { insumo: 'Harina de trigo', cantidad: 300, unidad: 'kg', stock: 420 },
-      { insumo: 'Aceite vegetal', cantidad: 50, unidad: 'L', stock: 30 },
+      { insumo: 'Sémola de trigo', cantidad: 500, unidad: 'kg', stock: 900, atendido: 0 },
+      { insumo: 'Harina de trigo', cantidad: 300, unidad: 'kg', stock: 120, atendido: 0 },
+      { insumo: 'Aceite vegetal', cantidad: 50, unidad: 'L', stock: 30, atendido: 0 },
     ],
   },
   {
     id: 'r2', numero: 'REQ-046', fechaSolicitud: '04/06/2026', fechaRegistro: '04/06/2026 14:15',
     registradoPor: 'Carlos Quispe', estado: 'parcial',
+    atenciones: [
+      { fecha: '05/06/2026 10:15', por: 'Carlos Quispe', insumos: { 'Quinua orgánica': 50 } },
+    ],
     insumos: [
-      { insumo: 'Quinua orgánica', cantidad: 200, unidad: 'kg', stock: 500 },
-      { insumo: 'Sal yodada', cantidad: 80, unidad: 'kg', stock: 0 },
+      { insumo: 'Quinua orgánica', cantidad: 200, unidad: 'kg', stock: 0, atendido: 50 },
+      { insumo: 'Sal yodada', cantidad: 80, unidad: 'kg', stock: 0, atendido: 0 },
     ],
   },
   {
     id: 'r3', numero: 'REQ-045', fechaSolicitud: '03/06/2026', fechaRegistro: '03/06/2026 09:00',
     registradoPor: 'Luis Mamani', estado: 'atendido',
+    atenciones: [
+      { fecha: '03/06/2026 11:30', por: 'Luis Mamani', insumos: { 'Sémola de trigo': 300, 'Harina de trigo': 150, 'Huevos deshidratados': 100, 'Aceite vegetal': 20 } },
+    ],
     insumos: [
-      { insumo: 'Sémola de trigo', cantidad: 300, unidad: 'kg', stock: 1200 },
-      { insumo: 'Harina de trigo', cantidad: 150, unidad: 'kg', stock: 420 },
-      { insumo: 'Huevos deshidratados', cantidad: 100, unidad: 'kg', stock: 850 },
-      { insumo: 'Aceite vegetal', cantidad: 20, unidad: 'L', stock: 30 },
+      { insumo: 'Sémola de trigo', cantidad: 300, unidad: 'kg', stock: 900, atendido: 300 },
+      { insumo: 'Harina de trigo', cantidad: 150, unidad: 'kg', stock: 120, atendido: 150 },
+      { insumo: 'Huevos deshidratados', cantidad: 100, unidad: 'kg', stock: 850, atendido: 100 },
+      { insumo: 'Aceite vegetal', cantidad: 20, unidad: 'L', stock: 30, atendido: 20 },
     ],
   },
   {
     id: 'r4', numero: 'REQ-044', fechaSolicitud: '02/06/2026', fechaRegistro: '02/06/2026 11:20',
     registradoPor: 'Carlos Quispe', estado: 'atendido',
-    insumos: [{ insumo: 'Sal yodada', cantidad: 40, unidad: 'kg', stock: 0 }],
+    atenciones: [
+      { fecha: '02/06/2026 14:00', por: 'Carlos Quispe', insumos: { 'Sal yodada': 40 } },
+    ],
+    insumos: [{ insumo: 'Sal yodada', cantidad: 40, unidad: 'kg', stock: 0, atendido: 40 }],
   },
 ]
 
 // Alertas de stock bajo — se disparan cuando un insumo cae por debajo del punto de reorden
 // Las ve el supervisor y puede marcarlas como atendidas
+// Los datos reflejan el stock real del inventario y el ROP definido en el catálogo de insumos
 export const ALERTS = [
   {
-    id: 'a1', insumo: 'Sémola de trigo', stockActual: 80, puntoReorden: 300, unidad: 'kg',
-    leadTime: 5, generada: 'hace 2 horas',
+    id: 'a1', insumo: 'Sal yodada', stockActual: 0, puntoReorden: 50, unidad: 'kg',
+    leadTime: 5, generada: 'hace 3 horas',
   },
   {
-    id: 'a2', insumo: 'Harina de trigo', stockActual: 50, puntoReorden: 200, unidad: 'kg',
-    leadTime: 3, generada: 'hace 5 horas',
-  },
-  {
-    id: 'a3', insumo: 'Aceite vegetal', stockActual: 30, puntoReorden: 100, unidad: 'L',
-    leadTime: 7, generada: 'hace 20 minutos',
+    id: 'a2', insumo: 'Quinua orgánica', stockActual: 0, puntoReorden: 150, unidad: 'kg',
+    leadTime: 7, generada: 'hace 2 días',
   },
 ]
 

@@ -7,20 +7,7 @@ import {
 import { useApp } from '../lib/store.jsx'
 import { AppShell } from '../components/app-shell.jsx'
 import { Badge } from '../components/ui/status-badge.jsx'
-import { cn, fmt, qty } from '../lib/utils.js'
-
-function parseDate(ddmmYYYY) {
-  const [d, m, y] = ddmmYYYY.split('/').map(Number)
-  return new Date(y, m - 1, d)
-}
-
-function daysUntil(dateStr) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = parseDate(dateStr)
-  target.setHours(0, 0, 0, 0)
-  return Math.ceil((target - today) / (1000 * 60 * 60 * 24))
-}
+import { cn, fmt, qty, parseDate, daysUntil } from '../lib/utils.js'
 
 function parseDateTime(dtStr) {
   const [datePart, timePart] = dtStr.split(' ')
@@ -221,7 +208,7 @@ export default function DashboardPage() {
   }, [users, tasks, currentUser])
 
   return (
-    <AppShell title="Dashboard" allowedRoles={['jefe', 'supervisor']}>
+    <AppShell title="Dashboard" allowedRoles={['jefe']}>
       <div className="space-y-8">
 
         {/* ───── Section 1: KPI Cards ───── */}

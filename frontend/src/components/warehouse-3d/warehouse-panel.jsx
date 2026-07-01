@@ -1,7 +1,7 @@
 import { useCallback, useState, useRef, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { WarehouseScene } from './warehouse-scene.jsx'
-import { RotateCcw, Crosshair, Package, MapPin, Calendar, User, AlertTriangle } from 'lucide-react'
+import { RotateCcw, X, Package, MapPin, Calendar, User, AlertTriangle } from 'lucide-react'
 import { cn, qty } from '../../lib/utils.js'
 
 const STATUS_STYLE = {
@@ -32,7 +32,7 @@ function InfoPanel({ item, onClose }) {
           onClick={onClose}
           className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          <Crosshair className="size-3.5 rotate-45" />
+          <X className="size-3.5" />
         </button>
       </div>
 
@@ -160,8 +160,6 @@ export function WarehousePanel({
         <WarehouseScene
           onSelectBox={handleSelectBox}
           selectedItem={item}
-          onHoverItem={onHoverItem}
-          compact={compact}
         />
         {showToolbar && <CameraReset onReset={resetFnRef} />}
       </Canvas>
@@ -200,7 +198,7 @@ export function WarehousePanel({
               <>
                 <div className="h-3 w-px bg-border" />
                 <span className="text-[10px] text-muted-foreground px-1">
-                  WASD para caminar · R resetear
+                  R para resetear
                 </span>
               </>
             )}

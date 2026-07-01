@@ -1,27 +1,17 @@
 import { useMemo, useState } from 'react'
 import { Search, Box, ChevronDown } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
-import { INVENTORY, UBICACIONES, INSUMOS } from '../lib/data.js'
+import { UBICACIONES } from '../lib/data.js'
 import { AppShell } from '../components/app-shell.jsx'
 import { ActionButton } from '../components/ui/action-button.jsx'
 import { Badge } from '../components/ui/status-badge.jsx'
 import { SelectInput } from '../components/ui/form-field.jsx'
-import { qty } from '../lib/utils.js'
+import { qty, daysUntil } from '../lib/utils.js'
 
 const TODAY = new Date(2026, 5, 6)
 
-function parseDate(d) {
-  const [day, month, year] = d.split('/').map(Number)
-  return new Date(year, month - 1, day)
-}
-
-function daysUntil(d) {
-  return Math.round((parseDate(d).getTime() - TODAY.getTime()) / 86400000)
-}
-
-// Color según proximidad de vencimiento: rojo si vence en 7 días, amarillo si en 30, normal si falta más
 function vencColor(d) {
-  const days = daysUntil(d)
+  const days = daysUntil(d, TODAY)
   if (days <= 7) return 'text-critical'
   if (days <= 30) return 'text-warning'
   return 'text-foreground'
@@ -36,9 +26,8 @@ function groupByInsumo(lots) {
   return Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))
 }
 
-// Página de consulta de inventario — accesible por todos los roles (sin allowedRoles)
-// Muestra los insumos agrupados con su stock total, punto de reorden y estado
 export default function InventarioPage() {
+  const { inventory, insumos } = useApp()
   const [query, setQuery] = useState('')
   const [ubicacion, setUbicacion] = useState('')
   const [estado, setEstado] = useState('')
@@ -46,14 +35,13 @@ export default function InventarioPage() {
   const [selectedInsumo, setSelectedInsumo] = useState(null)
   const [emptyDb, setEmptyDb] = useState(false)
 
-  const data = emptyDb ? [] : INVENTORY
+  const data = emptyDb ? [] : inventory
 
-  // Agrupa los lotes por insumo y calcula stock total, estado (Normal / Stock bajo / Agotado) y punto de reorden
   const insumosData = useMemo(() => {
     const grouped = groupByInsumo(data)
     return grouped.map(([insumo, lots]) => {
       const totalQty = lots.reduce((sum, l) => sum + l.cantidad, 0)
-      const reorderPoint = INSUMOS.find((i) => i.nombre === insumo)?.puntoReorden || 0
+      const reorderPoint = insumos.find((i) => i.nombre === insumo)?.puntoReorden || 0
       const unidad = lots[0]?.unidad || 'kg'
 
       let statusColor = 'green'
@@ -63,9 +51,8 @@ export default function InventarioPage() {
 
       return { insumo, lots, totalQty, unidad, reorderPoint, statusColor, statusText }
     })
-  }, [data])
+  }, [data, insumos])
 
-  // Filtros aplicados por insumo, ubicación y estado del stock
   const filtered = useMemo(() => {
     return insumosData.filter((item) => {
       const q = applied.query.toLowerCase()
@@ -89,7 +76,6 @@ export default function InventarioPage() {
 
   return (
     <AppShell title="Consulta de Inventario">
-      {/* Panel de filtros — insumo, ubicación, estado y botón para aplicar/buscar */}
       <div className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4">
         <SelectInput value={query} onChange={(e) => setQuery(e.target.value)} className="w-56">
           <option value="">Filtrar por insumo</option>
@@ -185,15 +171,12 @@ export default function InventarioPage() {
   )
 }
 
-// Drawer lateral que se abre al hacer clic en "Ver lotes" — muestra el detalle de cada lote del insumo seleccionado
 function LotesDrawer({ insumo, lots, onClose }) {
   if (!insumo) return null
 
   return (
     <>
-      {/* Overlay oscuro al fondo */}
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} aria-hidden="true" />
-      {/* Panel lateral derecho con la tabla de lotes */}
       <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl flex flex-col overflow-hidden rounded-l-lg border-l border-border bg-card shadow-lg">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="font-semibold text-foreground">Lotes de {insumo}</h2>

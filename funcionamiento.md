@@ -15,10 +15,19 @@ El backend existe como proyecto separado (Express en `/backend`), pero **actualm
 - **lucide-react** para los íconos de la interfaz.
 - **clsx + tailwind-merge** para la función utilitaria `cn()`.
 
+## Lógica del almacén
+
+El almacén de WMS Qori Foods es un **almacén de insumos**, no de productos terminados.
+
+- **Entrada de insumos:** Ocurre cuando un operario registra el ingreso de un lote nuevo al almacén (ej: llega un camión con un pedido a proveedores).
+- **Salida de insumos:** Ocurre únicamente cuando Producción requiere insumos para su proceso productivo.
+
+Cada insumo tiene **un único proveedor** asociado para simplificar la trazabilidad.
+
 ## Flujo de la aplicación
 
 1. El usuario entra a la app y ve el **login**.
-2. Ingresa correo y contraseña. El sistema busca al usuario en el arreglo `USERS` de `data.js`. Si coincide y está activo, lo guarda en el contexto (`currentUser`).
+2. Ingresa correo y contraseña. El sistema busca al usuario en el estado local. Si coincide y está activo, lo guarda en el contexto (`currentUser`).
 3. Redirige a `/inicio`. Ahí el `AppShell` detecta el rol del usuario y renderiza la sidebar con las opciones que le corresponden.
 4. Cada página tiene un `allowedRoles`. Si el usuario no tiene ese rol, lo redirige al inicio.
 5. El usuario puede cerrar sesión desde la sidebar (modal de confirmación).
@@ -27,247 +36,126 @@ El backend existe como proyecto separado (Express en `/backend`), pero **actualm
 
 Hay 3 roles fijos. Cada uno ve una barra de navegación distinta y tiene acceso a distintas páginas:
 
-| Rol | Label | Puede ver |
+| Rol | Label | Descripción |
 |---|---|---|
-| `jefe` | Jefe de Almacén | Inicio, Registrar Insumo, Consulta de Inventario, Visualización 3D, Gestión de Usuarios, Asignar Responsabilidades |
-| `supervisor` | Supervisor de Almacén | Inicio, Gestión de Requerimientos, Consulta de Inventario, Visualización 3D, Alertas y Monitoreo |
-| `operario` | Operario de Almacén | Inicio, Registrar Ingreso de Lote, Gestión de Requerimientos, Consulta de Inventario, Visualización 3D |
+| `jefe` | Jefe de Almacén | Visión general del almacén, gestión de insumos, usuarios y responsabilidades |
+| `supervisor` | Supervisor de Almacén | Gestión de requerimientos de producción y atención de alertas de stock |
+| `operario` | Operario de Almacén | Registro de ingreso de lotes y atención de requerimientos (salida de insumos) |
 
-Los roles están definidos en `lib/nav.js` (la navegación) y `lib/types.js` (los labels).
+### Jefe de Almacén
 
-Además, ciertos componentes dentro de una página cambian según el rol. Por ejemplo:
-- En la página de Requerimientos, solo el **supervisor** ve el botón "Nuevo Requerimiento"; solo el **operario** puede atender requerimientos pendientes.
-- En Alertas, solo el **supervisor** ve y atiende alertas.
-- En Gestión de Usuarios y Responsabilidades, solo entra el **jefe**.
-- La página de **Visualización 3D del Almacén** es transversal y accesible para todos los roles para facilitar la ubicación física de lotes.
+El jefe tiene acceso al **Dashboard del Almacén** para ver el estado actual del almacén. Sus funciones son:
 
----
+- **Dashboard (`/dashboard`):** Panel completo con KPIs, estado del inventario, movimientos recientes, lotes próximos a vencer, distribución de stock y resumen del equipo.
+- **Registrar Insumo (`/insumosRegistro`):** Agrega nuevos insumos al sistema con su proveedor, unidad de medida y punto de reorden (ROP). También puede editar insumos existentes.
+- **Consulta de Inventario (`/inventario`):** Visualiza el stock agrupado por insumo con detalle de lotes.
+- **Visualización 3D (`/almacen-3d`):** Representación interactiva del almacén con ubicación de lotes.
+- **Gestión de Usuarios (`/usuarios`):** CRUD completo de usuarios del sistema (crear, editar, activar/desactivar).
+- **Asignar Responsabilidades (`/responsabilidades`):** Asigna tareas a supervisores y operarios.
 
-## Carpeta `lib/` — Lógica compartida
+### Supervisor de Almacén
 
-### `data.js`
-Contiene todos los datos mock del sistema: usuarios, insumos, ubicaciones físicas, inventario por lote, requerimientos, alertas y tareas. Cuando el backend esté listo, estos datos se reemplazarán por llamadas API. Por ahora cada usuario tiene una contraseña en texto plano para simular el login.
+El supervisor **NO ve el Dashboard**. Al iniciar sesión, se le muestran sus **pendientes** (tareas asignadas) más KPIs de alertas activas y requerimientos pendientes. Sus funciones son:
 
-### `store.jsx`
-El corazón del estado global. Usa Context API (`createContext`) para compartir datos entre todos los componentes sin necesidad de prop drilling.
+- **Registrar Requerimiento de Producción (`/requerimientos/nuevo`):** Cuando Producción necesita insumos, entrega al supervisor un requerimiento manual (en físico). El supervisor lo registra en el sistema con la lista de insumos solicitados.
+- **Listado de Requerimientos (`/requerimientos`):** Visualiza todos los requerimientos registrados y su estado (pendiente, parcial, atendido).
+- **Atender Alertas (`/alertas`):** El sistema detecta automáticamente cuando un insumo alcanza una cantidad menor a su punto de reorden (ROP) y genera una alerta. El supervisor atiende la alerta, lo que envía un requerimiento de reabastecimiento al área de Compras (Compras se encarga del resto del proceso).
+- **Consulta de Inventario (`/inventario`):** Visualiza el stock disponible.
+- **Visualización 3D (`/almacen-3d`):** Representación interactiva del almacén.
 
-**Qué contiene el contexto:**
-- **Datos:** `currentUser`, `users`, `inventory`, `insumos`, `requirements`, `alerts`, `tasks`, `toasts`
-- **Funciones de autenticación:** `login()`, `logout()`
-- **Funciones CRUD:** `addInsumo()`, `updateInsumo()`, `addUser()`, `assignTask()`, `completeTask()`, `attendRequirement()`, `attendAlert()`, `toggleUserActive()`
-- **Utilidades:** `addToast()`, `dismissToast()`
-- **Derivados:** `activeAlertCount`, `pendingReqCount` (valores calculados con `useMemo`)
+### Operario de Almacén
 
-Cada función que modifica datos usa `useCallback` para evitar renders innecesarios. Las operaciones mutan el estado "en memoria" — cuando llegue el backend, estas funciones harán `fetch`/`axios` en vez de modificar arreglos locales.
+El operario **NO ve el Dashboard**. Al iniciar sesión, se le muestran sus **pendientes** (tareas asignadas). Sus funciones son:
 
-### `nav.js`
-Define los ítems del menú lateral con su ícono, label y ruta. Incluye el nuevo ítem `almacen3d` (`/almacen-3d`). Agrupa las rutas por rol en la constante `NAV_BY_ROLE`. La sidebar lee esta constante para saber qué mostrar según `currentUser.role`.
+- **Registrar Ingreso de Lote (`/ingreso`):** Cuando llega un lote al almacén, registra su ingreso: selecciona el insumo (autocompleta proveedor), ingresa cantidad, fecha de vencimiento, ubicación física. El número de lote se genera automáticamente.
+- **Atender Requerimientos de Producción (`/requerimientos/:id/atender`):** Prepara la salida de los insumos solicitados por Producción y registra la salida en el sistema. El sistema sugiere el lote más próximo a vencer (FEFO). Si no hay stock suficiente para completar todo, se puede atender **parcialmente**: el sistema guarda cuánto se despachó (acumulado en `atendido`) y el requerimiento queda como "parcial". Cuando llegue más stock, el operario puede retomar el requerimiento y completar los insumos pendientes.
+- **Consulta de Inventario (`/inventario`):** Visualiza el stock disponible.
+- **Visualización 3D (`/almacen-3d`):** Representación interactiva del almacén.
 
-### `types.js`
-Constantes runtime, como `ROLE_LABEL` que mapea cada rol a su nombre legible. No hay TypeScript, así que esto reemplaza los tipos/enums.
+## Flujo de Requerimientos (entrada y salida)
 
-### `utils.js`
-Tres funciones utilitarias:
-- `cn()` — Combina clases de Tailwind condicionalmente (wrapper de clsx + tailwind-merge)
-- `fmt()` — Formatea números con separadores de miles (locale `es-PE`)
-- `qty()` — Concatena número formateado + unidad (ej: "1 200 kg")
+1. **Producción** necesita insumos para su proceso. Como no cuenta con sistema propio, genera un requerimiento **manual** (documento físico) con la lista de insumos y cantidades.
+2. El **supervisor** recibe el documento y lo registra en el sistema mediante la pantalla "Nuevo Requerimiento".
+3. Los **operarios** ven el requerimiento en la lista y lo **atienden**: preparan físicamente los insumos y registran la salida en el sistema.
+4. Al registrar la salida, el sistema **descuenta automáticamente** del inventario y actualiza el estado del requerimiento.
 
----
+### Atención parcial y acumulada
 
-## Carpeta `components/` — Componentes reutilizables
+Si no hay stock suficiente para completar la cantidad solicitada de un insumo, el operario puede registrar una **salida parcial**. El sistema:
 
-### `app-shell.jsx`
-El layout principal de todas las páginas protegidas. Renderiza la sidebar, el topbar, el contenido (`children`) y el contenedor de toasts. También maneja el modal de confirmación de cierre de sesión. Verifica que el usuario actual tenga el rol permitido para la página (`allowedRoles`).
+- **Acumula** la cantidad despachada en el campo `atendido` de cada insumo.
+- **Guarda un historial** (`atenciones[]`) con la fecha, hora y responsable de cada atención parcial.
+- Marca el requerimiento como **"parcial"**.
 
-### `sidebar.jsx`
-Menú lateral fijo (60 de ancho / 240px). Muestra el logo de Qori, el nombre del sistema, los enlaces de navegación según el rol del usuario, y un recuadro inferior con el avatar (iniciales), nombre, rol y botón de cerrar sesión.
+Cuando llegue más stock, el operario puede **volver a atender** el mismo requerimiento. El sistema muestra:
+- Cuánto se atendió previamente ("Ya atendido: 50 kg")
+- Cuánto falta por atender ("Pendiente: 150 kg")
+- El historial de atenciones previas con sus fechas
 
-### `topbar.jsx`
-Barra superior fija. Muestra el título de la página actual y, para jefe/supervisor, una campanita con el contador de alertas activas. Al hacer clic en la campana navega a `/alertas`.
+Cuando todos los insumos alcanzan su cantidad solicitada, el requerimiento pasa a **"atendido"** con la fecha y hora de la última atención completada.
 
-### `task-row.jsx`
-Fila de tarea con checkbox para marcar como completada/pendiente. Se usa en la página de Inicio.
+## Flujo de Alertas de Reabastecimiento
 
-### `toast-container.jsx`
-Renderiza las notificaciones temporales (toasts) en la esquina superior derecha. Cada toast se auto-destruye a los 4 segundos.
+1. El sistema **calcula automáticamente** el stock total de cada insumo comparándolo con su punto de reorden (ROP).
+2. Si el stock total es menor al ROP, se genera una **alerta** visible en la pantalla de Alertas y en la campana de notificaciones del supervisor.
+3. El **supervisor** revisa la alerta y la **atiende**, lo que envía una solicitud de reabastecimiento al área de Compras.
+4. Compras gestiona la compra con el proveedor correspondiente.
+5. Cuando el lote finalmente llega al almacén, el **operario** registra el ingreso.
 
-### Componentes de UI comunes (`components/ui/`)
-- **`action-button.jsx`:** Botón con variantes visuales: `primary` (default), `ghost`, `danger`, `outline`. Soporta `fullWidth`.
-- **`form-field.jsx`:** Componentes de formulario reutilizables: `Field` (label + error), `TextInput`, `SelectInput`, `TextArea`. Todos tienen manejo de estado `invalid` para mostrar errores.
-- **`modal.jsx`:** Modal genérico con overlay, título, contenido y `ModalFooter`. Se controla con prop `open`. Cierra al hacer clic fuera.
-- **`status-badge.jsx`:** Etiqueta de estado con colores predefinidos: `amber`, `green`, `red`, `blue`, `navy`, `gray`.
+## Estructura del frontend
 
-### Componentes 3D (`components/warehouse-3d/`)
-- **`warehouse-scene.jsx`:** Representa la escena WebGL 3D del almacén. Contiene las luces (ambiental, direccional con proyección de sombras y hemisférica), la cuadrícula del suelo (`Grid`), sombras de contacto (`ContactShadows`), el sistema interactivo de controles de órbita (`OrbitControls`), y renderiza dinámicamente los estantes (`RackFrame`), los carteles flotantes de pasillos (`PasilloSign`) y las cajas que representan los lotes del inventario (`StockBox`), además de indicadores visuales transparentes para las ubicaciones vacías (`EmptySlot`).
-- **`warehouse-panel.jsx`:** Componente contenedor robusto que integra la escena Canvas 3D, el panel informativo flotante de detalle de lote, soporte para renderizado compacto (útil para dashboards o drawers laterales), y accesos directos por teclado (por ejemplo, presionar la tecla **R** para reiniciar el ángulo de la cámara).
+### Carpeta `lib/` — Lógica compartida
 
----
+- **`data.js`:** Contiene datos mock del sistema (usuarios, insumos, ubicaciones, inventario, requerimientos, tareas). Cuando el backend esté listo, estos datos se reemplazarán por llamadas API.
+- **`store.jsx`:** Estado global vía Context API. Expone datos y funciones de modificación. Las alertas son calculadas automáticamente en base al inventario y los ROP de cada insumo.
+- **`nav.js`:** Define los ítems del menú lateral filtrados por rol en `NAV_BY_ROLE`.
+- **`types.js`:** Constantes runtime como `ROLE_LABEL`.
+- **`utils.js`:** Funciones utilitarias: `cn()`, `fmt()`, `qty()`, `parseDate()`, `daysUntil()`.
 
-## Carpeta `pages/` — Las vistas del sistema
+### Carpeta `components/` — Componentes reutilizables
 
-### `login.jsx`
-Pantalla de inicio de sesión con logo, formulario de correo/contraseña y validación contra los usuarios mock. Maneja 2 errores: credenciales incorrectas y cuenta inactiva. Si ya hay sesión, redirige a `/inicio`.
+- **`app-shell.jsx`:** Layout principal que envuelve cada página (sidebar + topbar + contenido + toasts).
+- **`sidebar.jsx`:** Menú lateral izquierdo con navegación según el rol.
+- **`topbar.jsx`:** Barra superior con título de página y campana de alertas (solo supervisor).
+- **`toast-container.jsx`:** Notificaciones flotantes temporales.
+- **`task-row.jsx`:** Fila de tarea con checkbox de completado.
+- **`ui/`:** Componentes base: `ActionButton`, `Field`, `TextInput`, `SelectInput`, `TextArea`, `Modal`, `Badge`.
+- **`warehouse-3d/`:** Componentes para la escena 3D del almacén.
 
-### `inicio.jsx`
-Dashboard principal. Muestra contenido diferente según el rol:
-- **Operario:** "Buenos días" + sus tareas pendientes.
-- **Supervisor:** Lo mismo + KPIs de alertas activas y requerimientos pendientes.
-- **Jefe:** "Buenos días" + KPI de lotes registrados.
+### Carpeta `pages/` — Las vistas del sistema
 
-### `ingreso.jsx`
-Formulario para que el operario registre el ingreso de un lote nuevo: selecciona insumo, ingresa cantidad, fecha de vencimiento, ubicación. Genera automáticamente el código de lote correlativo y autocompleta el proveedor según el insumo. Por ahora solo muestra un toast de éxito, no persiste el lote en el inventario (es solo UI).
+| Ruta | Página | Roles | Descripción |
+|---|---|---|---|
+| `/` | Login | Público | Inicio de sesión |
+| `/inicio` | Inicio | Todos | Dashboard personalizado por rol |
+| `/ingreso` | Registrar Ingreso de Lote | operario | Registro de nuevo lote |
+| `/inventario` | Consulta de Inventario | Todos | Stock agrupado por insumo |
+| `/almacen-3d` | Visualización 3D | Todos | Maqueta interactiva del almacén |
+| `/requerimientos` | Gestión de Requerimientos | supervisor, operario | Listado de requerimientos |
+| `/requerimientos/nuevo` | Nuevo Requerimiento | supervisor | Crear requerimiento de producción |
+| `/requerimientos/:id/atender` | Atender Requerimiento | operario | Registrar salida de insumos |
+| `/alertas` | Alertas y Monitoreo | supervisor | Alertas de stock bajo |
+| `/usuarios` | Gestión de Usuarios | jefe | CRUD de usuarios |
+| `/responsabilidades` | Asignar Responsabilidades | jefe | Asignar tareas |
+| `/insumosRegistro` | Registrar Insumo | jefe | CRUD de insumos |
+| `/dashboard` | Dashboard | jefe | Panel de análisis |
 
-### `inventario.jsx`
-Consulta de inventario agrupado por insumo. Filtros por insumo, ubicación y estado de stock. Muestra tabla con cantidad total, punto de reorden, estado y un botón para ver los lotes individuales en un drawer lateral. También tiene un toggle para mostrar el inventario vacío (demo).
+### Componentes 3D (`warehouse-3d/`)
 
-### `almacen-3d.jsx`
-Nueva pantalla de **Visualización 3D del Almacén**. Renderiza la maqueta digital WebGL tridimensional interactiva del almacén real. Muestra indicadores de KPIs en tiempo real (alertas y requerimientos pendientes), barra de herramientas para restablecer la vista de cámara y un panel lateral de detalles (`InfoPanel`) que emerge de forma animada cuando se hace clic sobre un lote/caja en la escena 3D.
+La maqueta 3D representa el almacén físico con coordenadas:
 
-### `requerimientos.jsx`
-Listado de requerimientos de producción con su estado. El supervisor puede crear nuevos; el operario puede atender los pendientes. Tabla con N° de req, fechas, registrado por, cantidad de insumos, estado y acciones.
+- **Pasillos (X):** A=-9, B=-3, C=3, D=9
+- **Racks (Z):** 1=-4, 2=0, 3=4
+- **Niveles (Y):** 1=0.4, 2=1.2, 3=2.0
 
-### `nuevo-requerimiento.jsx`
-Formulario para que el supervisor cree un requerimiento. Permite agregar múltiples insumos en filas dinámicas, con validación de duplicados, stock cero y cantidades.
+Cada lote en inventario se representa como una caja coloreada según el tipo de insumo, con altura proporcional al stock y brillo indicador de estado (verde=disponible, naranja=stock bajo, rojo=agotado).
 
-### `atender-requerimiento.jsx`
-Pantalla para que el operario registre las salidas de un requerimiento. Muestra el stock disponible y sugiere lotes FEFO (First Expiry, First Out). Permite ingresar cantidad parcial. Al confirmar, marca el requerimiento como atendido o parcial.
+## Usuarios de prueba
 
-### `alertas.jsx`
-Panel de alertas de reabastecimiento para el supervisor. Lista insumos por debajo del punto de reorden con su déficit y lead time. El supervisor puede atenderlas (simula envío a Compras). Filtro por nombre de insumo.
-
-### `usuarios.jsx`
-CRUD de usuarios solo para el jefe. Tabla con nombre, email, rol, estado activo/inactivo. Acciones: editar, desactivar/reactivar. Modal de creación con validación de email duplicado y confirmación de contraseña.
-
-### `responsabilidades.jsx`
-Permite al jefe asignar tareas a supervisores y operarios. Muestra una lista de usuarios (excluye al jefe y a los inactivos). Al seleccionar uno, abre un drawer con sus tareas actuales y un formulario para asignar una nueva.
-
-### `insumos-registro.jsx`
-CRUD de insumos para el jefe. Formulario para crear nuevos insumos (nombre, proveedor, unidad, ROP) y lista de insumos registrados con botón de editar. Al editar, el formulario se rellena con los datos actuales y permite cambiar nombre, proveedor y ROP.
-
----
-
-## Detalle de la Visualización 3D del Almacén
-
-La maqueta 3D interactiva es una representación isométrica del almacén de insumos de Qori Foods.
-
-### 1. Sistema de Coordenadas y Distribución Física
-Las ubicaciones del almacén en el mundo real se especifican bajo el patrón `"Pasillo <Letra> – Rack <Número> – Nivel <Número>"`. El parser del frontend descompone esta cadena y la traduce a coordenadas WebGL ($X, Y, Z$):
-*   **Pasillos ($X$):** Se definen 4 pasillos paralelos:
-    *   **Pasillo A:** $X = -9$
-    *   **Pasillo B:** $X = -3$
-    *   **Pasillo C:** $X = 3$
-    *   **Pasillo D:** $X = 9$
-*   **Racks ($Z$):** Cada pasillo contiene 3 estanterías:
-    *   **Rack 1:** $Z = -4$
-    *   **Rack 2:** $Z = 0$
-    *   **Rack 3:** $Z = 4$
-*   **Niveles ($Y$):** Cada estantería cuenta con 3 alturas de almacenamiento:
-    *   **Nivel 1:** $Y = 0.4$
-    *   **Nivel 2:** $Y = 1.2$
-    *   **Nivel 3:** $Y = 2.0$
-
-### 2. Elementos Visuales 3D
-*   **Estanterías (`RackFrame`):** Estructuras realistas de color marrón metalizado con postes verticales y bandejas de carga horizontales. Muestra de forma flotante el identificador del estante en la parte superior (Ej: `P-A R1`).
-*   **Señalización de Pasillos (`PasilloSign`):** Carteles colgantes de color corporativo de la marca con letras doradas colocados al frente de cada pasillo para orientar al operador.
-*   **Espacios Vacíos (`EmptySlot`):** Bloques delgados de color marrón oscuro semitransparente que se renderizan en cada nivel donde no existe ningún lote asignado en el inventario actual, facilitando la identificación de espacio disponible.
-*   **Lotes de Stock (`StockBox`):** Cajas interactivas cuya altura es proporcional al ratio de stock actual respecto a su cantidad inicial (a menor stock, la caja disminuye de altura).
-    *   **Color de la caja (según ingrediente):**
-        *   Sémola de trigo: Dorado (`#c8922a`)
-        *   Harina de trigo: Crema (`#f0e6d3`)
-        *   Aceite vegetal: Naranja (`#e67e22`)
-        *   Sal yodada: Gris claro (`#d5d0c5`)
-        *   Huevos deshidratados: Amarillo (`#f1c40f`)
-        *   Quinua orgánica: Marrón madera (`#8B4513`)
-        *   Insumo genérico: Gris (`#888888`)
-    *   **Color emisivo (borde y brillo de estado):**
-        *   Disponible (normal): Brillo verde (`#27ae60`)
-        *   Stock bajo: Brillo naranja (`#e67e22`)
-        *   Agotado (vacío): Brillo rojo (`#c0392b`)
-
-### 3. Interactividad y Animaciones
-*   **Hovering:** Al pasar el mouse sobre una caja de lote, su silueta resalta en dorado y se despliega un globo de información flotante (`Html` de `@react-three/drei`) mostrando el nombre del insumo, la cantidad disponible y el código de lote.
-*   **Selección:** Al hacer clic en un lote, este se ilumina con emisión dorada y empieza a rotar sobre su propio eje $Y$ continuamente. Al mismo tiempo, se despliega desde la derecha un panel lateral (`InfoPanel`) con la ficha de trazabilidad completa del lote.
-*   **Cámara:** El usuario puede orbitar con el botón izquierdo, desplazarse con el botón derecho (paneo) y hacer zoom con la rueda del ratón (`OrbitControls`). También se añade soporte para resetear la perspectiva isométrica original.
-
----
-
-## Archivos raíz
-
-### `main.jsx`
-Punto de entrada. Monta la app React en el DOM con `StrictMode`.
-
-### `App.jsx`
-Define el router (BrowserRouter) con todas las rutas. Envuelve todo en `AppProvider` para el contexto. Las rutas protegidas usan `PrivateRoute` que redirige al login si no hay `currentUser`.
-
-### `index.css`
-Estilos globales con Tailwind CSS v4. Define los tokens de diseño (`@theme`) con los colores de la marca Qori Foods: marrón (#6b2d1f) como color principal, dorado (#c8922a) como accent, y derivados para sidebar, estados (success, warning, critical), etc.
-
-### `vite.config.js`
-Configuración de Vite: plugin de React y plugin de Tailwind CSS v4.
-
----
-
-## El componente que no existe (pero se usa)
-
-El `SelectInput` tiene un SVG inline en estilo `backgroundImage` para el ícono de flecha del select. Está hardcodeado porque Tailwind v4 no incluye utilidades para íconos nativos de select.
-
----
-
-## Cómo se agrega una página nueva
-
-1. Crear el archivo en `pages/`.
-2. Envolver el contenido en `<AppShell title="..." allowedRoles={[...]}>`.
-3. Agregar la ruta en `App.jsx`.
-4. Si la página debe aparecer en la navegación, agregar el ítem en `nav.js` e incluirlo en el arreglo del rol correspondiente.
-
----
-
-## Si se conecta el backend
-
-Cada función en `store.jsx` que hoy modifica un arreglo local deberá cambiarse para hacer peticiones HTTP (axios o fetch). Por ejemplo:
-
-```js
-// Hoy
-const addInsumo = useCallback((insumo) => {
-  setInsumos((ins) => [...ins, insumo])
-}, [])
-
-// Mañana
-const addInsumo = useCallback(async (insumo) => {
-  const res = await axios.post('/api/insumos', insumo)
-  setInsumos((ins) => [...ins, res.data])
-}, [])
-```
-
-Las credenciales de login también se validarían contra el backend en vez de buscar en `USERS` local.
-
----
-
-## Contexto para la IA al abrir una nueva terminal de opencode
-
-Cuando inicies una nueva sesión de opencode y quieras que la IA entienda tu proyecto, copia y pega este bloque:
-
-```
-Trabajamos en WMS Qori Foods, un sistema web de gestión de almacén de insumos (frontend en React 19 + Vite 8 + Tailwind CSS v4, JavaScript puro, sin TypeScript). El proyecto está en C:\Users\FREDDY\Documents\wms-qorifoods.
-
-Stack: React 19, Vite 8, React Router DOM v7, Tailwind CSS v4, Three.js, @react-three/fiber, @react-three/drei, lucide-react, clsx + tailwind-merge.
-
-Estructura del frontend:
-- src/lib/ → data.js (datos mock), store.jsx (Context API con estado global), nav.js (navegación por rol), types.js (constantes), utils.js (cn, fmt, qty)
-- src/components/ → app-shell.jsx (layout con sidebar+topbar), sidebar.jsx, topbar.jsx, task-row.jsx, toast-container.jsx, ui/ (action-button, form-field, modal, status-badge), warehouse-3d/ (warehouse-scene.jsx, warehouse-panel.jsx)
-- src/pages/ → login, inicio, ingreso, inventario, almacen-3d (maqueta interactiva 3D), requerimientos, nuevo-requerimiento, atender-requerimiento, alertas, usuarios, responsabilidades, insumos-registro
-- src/App.jsx (router), main.jsx (entry point), index.css (Tailwind + tokens), vite.config.js
-
-Roles del sistema: jefe (Jefe de Almacén), supervisor (Supervisor de Almacén), operario (Operario de Almacén). Cada rol ve distintas pantallas y botones según NAV_BY_ROLE en nav.js. Todos los roles tienen acceso a la vista /almacen-3d.
-
-Visualización 3D: Implementada usando Three.js, React Three Fiber y Drei. Muestra de forma interactiva estantes de almacenamiento (racks), ubicaciones de pasillos (A, B, C, D), estantes (1, 2, 3), niveles (1, 2, 3) y cajas de stock coloreadas según tipo de insumo y brillo de estado (disponible: verde, stock bajo: naranja, agotado: rojo). Al hacer clic sobre las cajas, estas giran e invocan un panel lateral dinámico con toda su trazabilidad e historial. Soporta reset de perspectiva (tecla R), hovering informativo, sombras dinámicas de contacto y grid de suelo.
-
-Datos: todo en memoria vía Context API. No hay backend real aún. Los usuarios mock están en data.js con contraseñas en texto plano.
-Login valida contra USERS local buscando por email y comparando password.
-
-Usuarios de prueba: maria@qorifoods.com / jefe123 (jefe), pedro@qorifoods.com / super123 (supervisor), carlos@qorifoods.com / operario123 (operario), luis@qorifoods.com / operario123 (operario), ana@qorifoods.com / super123 (inactivo).
-
-El logo está en public/images/LOGO-QORI.png.
-Los estilos usan colores personalizados definidos como variables CSS en index.css (brand: #6b2d1f, primary: #c8922a).
-El archivo funcionamiento.md explica cómo funciona todo. ayudadocumento.md tiene el detalle de funcionalidades por pantalla.
-```
+| Rol | Nombre | Email | Contraseña | Estado |
+|---|---|---|---|---|
+| Jefe de Almacén | María Flores | maria@qorifoods.com | jefe123 | Activo |
+| Supervisor | Pedro Salas | pedro@qorifoods.com | super123 | Activo |
+| Operario | Carlos Quispe | carlos@qorifoods.com | operario123 | Activo |
+| Operario | Luis Mamani | luis@qorifoods.com | operario123 | Activo |
+| Supervisor | Ana Torres | ana@qorifoods.com | super123 | Inactivo |
