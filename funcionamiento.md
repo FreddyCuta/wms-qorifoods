@@ -67,7 +67,7 @@ El supervisor **NO ve el Dashboard**. Al iniciar sesión, se le muestran sus **p
 
 El operario **NO ve el Dashboard**. Al iniciar sesión, se le muestran sus **pendientes** (tareas asignadas). Sus funciones son:
 
-- **Registrar Ingreso de Lote (`/ingreso`):** Cuando llega un lote al almacén, registra su ingreso: selecciona el insumo (autocompleta proveedor), ingresa cantidad, fecha de vencimiento, ubicación física. El número de lote se genera automáticamente.
+- **Registrar Ingreso de Lote (`/ingreso`):** Cuando llega un lote al almacén, registra su ingreso: selecciona el insumo (autocompleta proveedor), ingresa cantidad, fecha de vencimiento, ubicación física (3 selects: pasillo, rack, nivel, o botón "Seleccionar en 3D" para elegir visualmente). El número de lote se genera automáticamente.
 - **Atender Requerimientos de Producción (`/requerimientos/:id/atender`):** Prepara la salida de los insumos solicitados por Producción y registra la salida en el sistema. El sistema sugiere el lote más próximo a vencer (FEFO). Si no hay stock suficiente para completar todo, se puede atender **parcialmente**: el sistema guarda cuánto se despachó (acumulado en `atendido`) y el requerimiento queda como "parcial". Cuando llegue más stock, el operario puede retomar el requerimiento y completar los insumos pendientes.
 - **Consulta de Inventario (`/inventario`):** Visualiza el stock disponible.
 - **Visualización 3D (`/almacen-3d`):** Representación interactiva del almacén.
@@ -142,13 +142,24 @@ Cuando todos los insumos alcanzan su cantidad solicitada, el requerimiento pasa 
 
 ### Componentes 3D (`warehouse-3d/`)
 
-La maqueta 3D representa el almacén físico con coordenadas:
+La maqueta 3D representa un almacén logístico real con filas largas de racks paralelas entre sí. Los pasillos (entre filas) corren a lo largo del eje X, y los racks (bahías) se distribuyen a lo largo de cada fila en X. Cinco filas paralelas (A–E) con cuatro pasillos entre ellas, similar a un centro de distribución moderno.
 
-- **Pasillos (X):** A=-9, B=-3, C=3, D=9
-- **Racks (Z):** 1=-4, 2=0, 3=4
-- **Niveles (Y):** 1=0.4, 2=1.2, 3=2.0
+Coordenadas del layout:
+
+| Eje | Dimensión | Detalle |
+|---|---|---|
+| **Z** | 5 pasillos (A–E) | Filas largas de racks en Z: A=-8, B=-4, C=0, D=4, E=8 (cada fila de 40u de largo × 2u de fondo) |
+| **X** | 10 racks por fila (1–10) | Bahías a lo largo de la fila en X: 1=-18, 2=-14, 3=-10, 4=-6, 5=-2, 6=2, 7=6, 8=10, 9=14, 10=18 (cada bahía de 4u de ancho) |
+| **Y** | 6 niveles (1–6) | 1=0.07, 2=0.57, 3=1.07, 4=1.57, 5=2.07, 6=2.57 |
 
 Cada lote en inventario se representa como una caja coloreada según el tipo de insumo, con altura proporcional al stock y brillo indicador de estado (verde=disponible, naranja=stock bajo, rojo=agotado).
+
+Características de la escena:
+- **Múltiples lotes por nivel:** los items del mismo (pasillo, rack, nivel) se distribuyen automáticamente a lo ancho del estante (hasta 5 por repisa).
+- **Selección de ubicación 3D:** desde el formulario de ingreso se puede abrir un modal con el almacén 3D y hacer clic en un espacio vacío para autocompletar la ubicación.
+- **Fondo:** color cálido `#f3f0eb` en vez de negro.
+- **Tooltips:** emergentes con fondo blanco y ancho máximo al pasar el mouse sobre un lote.
+- **Controles:** órbita con damping 0.15, rotate 0.6, zoom 0.8, pan 0.5, distancia 4–60.
 
 ## Usuarios de prueba
 

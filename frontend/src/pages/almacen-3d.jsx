@@ -119,7 +119,7 @@ export default function Almacen3dPage() {
         <Canvas
           key={resetKey}
           shadows
-          camera={{ position: [26, 18, 26], fov: 45 }}
+          camera={{ position: [30, 22, 30], fov: 40 }}
           gl={{ antialias: true }}
           dpr={[1, 1.5]}
         >

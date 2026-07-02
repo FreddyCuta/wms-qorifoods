@@ -1,17 +1,34 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
+import { Canvas } from '@react-three/fiber'
+import { X } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
-import { UBICACIONES } from '../lib/data.js'
 import { AppShell } from '../components/app-shell.jsx'
 import { ActionButton } from '../components/ui/action-button.jsx'
 import { Field, SelectInput, TextInput } from '../components/ui/form-field.jsx'
+import { cn } from '../lib/utils.js'
+import { WarehouseScene } from '../components/warehouse-3d/warehouse-scene.jsx'
+
+const PASILLOS = ['A', 'B', 'C', 'D', 'E']
+const RACKS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+const NIVELES = [1, 2, 3, 4, 5, 6]
 
 export default function IngresoPage() {
   const { addToast, addLot, currentUser, insumos, inventory } = useApp()
   const [insumo, setInsumo] = useState('')
   const [cantidad, setCantidad] = useState('')
   const [vencimiento, setVencimiento] = useState('')
-  const [ubicacion, setUbicacion] = useState('')
+  const [pasillo, setPasillo] = useState('')
+  const [rack, setRack] = useState('')
+  const [nivel, setNivel] = useState('')
   const [errors, setErrors] = useState({})
+  const [show3DPicker, setShow3DPicker] = useState(false)
+
+  const handleSelectLocation3D = useCallback(({ pasillo: p, rack: r, nivel: n }) => {
+    setPasillo(p)
+    setRack(String(r))
+    setNivel(String(n))
+    setShow3DPicker(false)
+  }, [])
 
   const ahora = useMemo(() => {
     const d = new Date()
@@ -36,11 +53,23 @@ export default function IngresoPage() {
   const proveedor = insumos.find((i) => i.nombre === insumo)?.proveedor ?? ''
   const unidad = insumos.find((i) => i.nombre === insumo)?.unidad ?? 'kg'
 
+  const ubicacion = pasillo && rack && nivel
+    ? `Pasillo ${pasillo} – Rack ${rack} – Nivel ${nivel}`
+    : ''
+
+  const lotesEnNivel = ubicacion
+    ? inventory.filter((lot) => lot.ubicacion === ubicacion).length
+    : 0
+
+  const nivelLleno = lotesEnNivel >= 5
+
   function reset() {
     setInsumo('')
     setCantidad('')
     setVencimiento('')
-    setUbicacion('')
+    setPasillo('')
+    setRack('')
+    setNivel('')
     setErrors({})
   }
 
@@ -51,6 +80,7 @@ export default function IngresoPage() {
     if (!cantidad || Number(cantidad) <= 0) next.cantidad = 'La cantidad debe ser mayor a cero.'
     if (!vencimiento) next.vencimiento = 'La fecha de vencimiento debe ser posterior a la fecha actual.'
     if (!ubicacion) next.ubicacion = 'Seleccione una ubicación.'
+    else if (nivelLleno) next.ubicacion = `Este nivel ya tiene ${lotesEnNivel} lotes (máximo 5).`
 
     if (Object.keys(next).length > 0) {
       setErrors(next)
@@ -142,20 +172,88 @@ export default function IngresoPage() {
             />
           </Field>
 
-          <Field label="Ubicación en almacén" error={errors.ubicacion}>
-            <SelectInput
-              value={ubicacion}
-              invalid={!!errors.ubicacion}
-              onChange={(e) => setUbicacion(e.target.value)}
-            >
-              <option value="">Seleccione una ubicación...</option>
-              {UBICACIONES.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
+          <div className="md:col-span-2">
+            <Field label="Ubicación en almacén" error={errors.ubicacion}>
+              <div className="grid grid-cols-3 gap-2">
+                <SelectInput
+                  value={pasillo}
+                  invalid={!!errors.ubicacion}
+                  onChange={(e) => setPasillo(e.target.value)}
+                >
+                  <option value="">Pasillo</option>
+                  {PASILLOS.map((p) => (
+                    <option key={p} value={p}>Pasillo {p}</option>
+                  ))}
+                </SelectInput>
+                <SelectInput
+                  value={rack}
+                  invalid={!!errors.ubicacion}
+                  onChange={(e) => setRack(e.target.value)}
+                >
+                  <option value="">Rack</option>
+                  {RACKS.map((r) => (
+                    <option key={r} value={r}>Rack {r}</option>
+                  ))}
+                </SelectInput>
+                <SelectInput
+                  value={nivel}
+                  invalid={!!errors.ubicacion}
+                  onChange={(e) => setNivel(e.target.value)}
+                >
+                  <option value="">Nivel</option>
+                  {NIVELES.map((n) => (
+                    <option key={n} value={n}>Nivel {n}</option>
+                  ))}
+                </SelectInput>
+              </div>
+              <ActionButton
+                type="button"
+                variant="outline"
+                className="mt-2 w-full"
+                onClick={() => setShow3DPicker(true)}
+              >
+                Seleccionar en 3D
+              </ActionButton>
+              {ubicacion && (
+                <div className={cn(
+                  'mt-1.5 text-right text-xs',
+                  nivelLleno ? 'text-critical font-medium' : 'text-muted-foreground',
+                )}>
+                  {lotesEnNivel}/5 lotes en este nivel
+                  {nivelLleno && ' — lleno'}
+                </div>
+              )}
+            </Field>
+          </div>
+
+          {show3DPicker && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+              <div className="relative flex h-[85vh] w-[90vw] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl md:h-[80vh] md:w-[80vw]">
+                <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                  <h3 className="text-sm font-bold text-foreground">
+                    Seleccionar ubicación — haz clic en un espacio vacío
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShow3DPicker(false)}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+                <div className="flex-1">
+                  <Canvas
+                    shadows
+                    camera={{ position: [30, 22, 30], fov: 40 }}
+                    gl={{ antialias: true }}
+                    dpr={[1, 1.5]}
+                  >
+                    <WarehouseScene onSelectLocation={handleSelectLocation3D} />
+                  </Canvas>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Field label="Registrado por">
             <TextInput readOnly value={currentUser?.name ?? 'Operario'} />
