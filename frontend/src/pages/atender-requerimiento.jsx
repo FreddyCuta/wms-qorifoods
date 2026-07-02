@@ -9,9 +9,9 @@ import { Modal, ModalFooter } from '../components/ui/modal.jsx'
 import { Field, TextInput } from '../components/ui/form-field.jsx'
 import { qty } from '../lib/utils.js'
 
-function sugerirLoteFefo(inventory, insumo) {
+function sugerirLoteFefo(inventory, insumoKey) {
   const lots = inventory
-    .filter((l) => l.insumo === insumo && l.cantidad > 0)
+    .filter((l) => (l.insumoId || l.insumo) === insumoKey && l.cantidad > 0)
     .sort((a, b) => {
       const [da, ma, ya] = a.vencimiento.split('/').map(Number)
       const [db, mb, yb] = b.vencimiento.split('/').map(Number)
@@ -42,32 +42,34 @@ export default function AtenderRequerimientoPage() {
   const stockDisponible = {}
   inventory.forEach((lot) => {
     if (lot.cantidad > 0) {
-      stockDisponible[lot.insumo] = (stockDisponible[lot.insumo] || 0) + lot.cantidad
+      const key = lot.insumoId || lot.insumo
+      stockDisponible[key] = (stockDisponible[key] || 0) + lot.cantidad
     }
   })
 
   const salidas = req.insumos.map((item) => {
+    const key = item.insumoId || item.insumo
     const yaAtendido = item.atendido || 0
     const pendiente = Math.max(0, item.cantidad - yaAtendido)
-    const cantidad = Number(salidaQtys[item.insumo] || 0)
+    const cantidad = Number(salidaQtys[key] || 0)
     const esCompleto = (yaAtendido + cantidad) >= item.cantidad
     const esInsuficiente = cantidad > 0 && (yaAtendido + cantidad) < item.cantidad
     const completadoPrevio = yaAtendido >= item.cantidad
-    return { ...item, pendiente, salidaQty: cantidad, yaAtendido, esCompleto, esInsuficiente, completadoPrevio }
+    return { ...item, key, pendiente, salidaQty: cantidad, yaAtendido, esCompleto, esInsuficiente, completadoPrevio }
   })
 
   const todasComplete = salidas.every((s) => (s.yaAtendido + s.salidaQty) >= s.cantidad)
   const algunaFaltante = salidas.some((s) => s.salidaQty > 0 && (s.yaAtendido + s.salidaQty) < s.cantidad)
   const hayAlgoParaAtender = salidas.some((s) => s.salidaQty > 0)
 
-  function handleSalidaChange(insumo, valor) {
+  function handleSalidaChange(key, valor) {
     const q = Math.max(0, Number(valor) || 0)
-    const item = req.insumos.find((i) => i.insumo === insumo)
+    const item = req.insumos.find((i) => (i.insumoId || i.insumo) === key)
     const yaAtendido = item?.atendido || 0
     const pendiente = Math.max(0, (item?.cantidad || 0) - yaAtendido)
-    const maxStock = stockDisponible[insumo] || 0
+    const maxStock = stockDisponible[key] || 0
     const maximo = Math.min(pendiente, maxStock)
-    setSalidaQtys({ ...salidaQtys, [insumo]: Math.min(q, maximo) })
+    setSalidaQtys({ ...salidaQtys, [key]: Math.min(q, maximo) })
   }
 
   function handleComplete() {
@@ -77,12 +79,12 @@ export default function AtenderRequerimientoPage() {
   function confirmSalida() {
     const salidaMap = {}
     salidas.forEach((s) => {
-      if (s.salidaQty > 0) salidaMap[s.insumo] = s.salidaQty
+      if (s.salidaQty > 0) salidaMap[s.key] = s.salidaQty
     })
     attendRequirement(req.id, salidaMap, currentUser)
     setConfirmOpen(false)
-    const completoAhora = Object.entries(salidaMap).every(([insumo, qty]) => {
-      const item = req.insumos.find((i) => i.insumo === insumo)
+    const completoAhora = Object.entries(salidaMap).every(([key, qty]) => {
+      const item = req.insumos.find((i) => (i.insumoId || i.insumo) === key)
       return item && ((item.atendido || 0) + qty) >= item.cantidad
     })
     const status = completoAhora ? 'completado' : 'parcialmente atendido'
@@ -132,10 +134,10 @@ export default function AtenderRequerimientoPage() {
         <h2 className="text-sm font-semibold text-foreground mb-4">Insumos solicitados para producción</h2>
         <div className="flex flex-col gap-4">
           {salidas.map((item) => {
-            const fefo = sugerirLoteFefo(inventory, item.insumo) || { lote: 'N/A', vence: 'N/A', ubicacion: 'N/A' }
-            const hayStock = stockDisponible[item.insumo] > 0
+            const fefo = sugerirLoteFefo(inventory, item.key) || { lote: 'N/A', vence: 'N/A', ubicacion: 'N/A' }
+            const hayStock = stockDisponible[item.key] > 0
             return (
-              <div key={item.insumo} className={`rounded-lg border ${item.completadoPrevio ? 'border-success/40 bg-success/5' : 'border-border bg-muted'} p-4`}>
+              <div key={item.key} className={`rounded-lg border ${item.completadoPrevio ? 'border-success/40 bg-success/5' : 'border-border bg-muted'} p-4`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-medium text-foreground">{item.insumo}</h3>
@@ -144,7 +146,7 @@ export default function AtenderRequerimientoPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-medium text-foreground">{qty(stockDisponible[item.insumo] || 0, item.unidad)}</div>
+                    <div className="text-sm font-medium text-foreground">{qty(stockDisponible[item.key] || 0, item.unidad)}</div>
                     <div className="text-xs text-muted-foreground">Stock disponible</div>
                   </div>
                 </div>
@@ -180,8 +182,8 @@ export default function AtenderRequerimientoPage() {
                             type="number"
                             min="0"
                             max={item.pendiente}
-                            value={salidaQtys[item.insumo] || ''}
-                            onChange={(e) => handleSalidaChange(item.insumo, e.target.value)}
+                            value={salidaQtys[item.key] || ''}
+                            onChange={(e) => handleSalidaChange(item.key, e.target.value)}
                             placeholder="0"
                             className="pr-12"
                           />
@@ -243,7 +245,7 @@ export default function AtenderRequerimientoPage() {
           <div className="space-y-2 text-sm">
             <h4 className="font-medium text-foreground">Resumen de esta atención:</h4>
             {salidas.filter((s) => s.salidaQty > 0).map((item) => (
-              <div key={item.insumo} className="flex justify-between text-muted-foreground">
+              <div key={item.key} className="flex justify-between text-muted-foreground">
                 <span>{item.insumo}</span>
                 <span className="font-medium">{qty(item.salidaQty, item.unidad)}</span>
               </div>

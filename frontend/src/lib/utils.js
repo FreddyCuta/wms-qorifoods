@@ -32,3 +32,17 @@ export function daysUntil(d, from = new Date()) {
   target.setHours(0, 0, 0, 0)
   return Math.round((target - base) / 86400000)
 }
+
+// Mapa nombre → ID de insumo (se construye al importar)
+const nombreAId = {}
+const idANombre = {}
+
+export function initInsumoMap(insumos) {
+  for (const i of insumos) {
+    nombreAId[i.nombre] = i.id
+    idANombre[i.id] = i.nombre
+  }
+}
+
+export function insumoId(nombre) { return nombreAId[nombre] }
+export function insumoName(id) { return idANombre[id] }

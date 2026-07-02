@@ -13,12 +13,12 @@ export const USERS = [
 
 // Catálogo de insumos — lo usa el jefe para registrar nuevos materiales y el operario al crear requerimientos
 export const INSUMOS = [
-  { nombre: 'Sémola de trigo', proveedor: 'Molinos del Norte SAC', unidad: 'kg', puntoReorden: 100, leadTime: 5 },
-  { nombre: 'Harina de trigo', proveedor: 'Industrias Unidas SAC', unidad: 'kg', puntoReorden: 80, leadTime: 3 },
-  { nombre: 'Aceite vegetal', proveedor: 'Distribuidora Lima SAC', unidad: 'L', puntoReorden: 20, leadTime: 7 },
-  { nombre: 'Sal yodada', proveedor: 'Salinera Perú SAC', unidad: 'kg', puntoReorden: 50, leadTime: 5 },
-  { nombre: 'Huevos deshidratados', proveedor: 'Avícola Andina SAC', unidad: 'kg', puntoReorden: 200, leadTime: 6 },
-  { nombre: 'Quinua orgánica', proveedor: 'Andes Orgánicos SAC', unidad: 'kg', puntoReorden: 150, leadTime: 7 },
+  { id: 'ins_1', nombre: 'Sémola de trigo', proveedor: 'Molinos del Norte SAC', unidad: 'kg', puntoReorden: 100, leadTime: 5 },
+  { id: 'ins_2', nombre: 'Harina de trigo', proveedor: 'Industrias Unidas SAC', unidad: 'kg', puntoReorden: 80, leadTime: 3 },
+  { id: 'ins_3', nombre: 'Aceite vegetal', proveedor: 'Distribuidora Lima SAC', unidad: 'L', puntoReorden: 20, leadTime: 7 },
+  { id: 'ins_4', nombre: 'Sal yodada', proveedor: 'Salinera Perú SAC', unidad: 'kg', puntoReorden: 50, leadTime: 5 },
+  { id: 'ins_5', nombre: 'Huevos deshidratados', proveedor: 'Avícola Andina SAC', unidad: 'kg', puntoReorden: 200, leadTime: 6 },
+  { id: 'ins_6', nombre: 'Quinua orgánica', proveedor: 'Andes Orgánicos SAC', unidad: 'kg', puntoReorden: 150, leadTime: 7 },
 ]
 
 // Ubicaciones físicas del almacén (pasillo / rack / nivel) — acá se asignan los lotes
@@ -33,171 +33,68 @@ export const UBICACIONES = (() => {
 
 // Inventario actual por lote — el corazón del sistema, visible para todos los roles
 // Cada lote traza: insumo, proveedor, ubicación, cantidad, vencimiento y quién lo registró
+const INSUMO_IDS = {
+  'Sémola de trigo': 'ins_1',
+  'Harina de trigo': 'ins_2',
+  'Aceite vegetal': 'ins_3',
+  'Sal yodada': 'ins_4',
+  'Huevos deshidratados': 'ins_5',
+  'Quinua orgánica': 'ins_6',
+}
+
+function makeInv(id, insumo, rest) {
+  return { id, insumo, insumoId: INSUMO_IDS[insumo], ...rest }
+}
+
 export const INVENTORY = [
-  {
-    id: 'l1', insumo: 'Sémola de trigo', codigoLote: 'LOT-2026-0018', cantidad: 700, unidad: 'kg',
-    cantidadInicial: 1200, vencimiento: '15/08/2026', ubicacion: 'Pasillo A – Rack 2 – Nivel 1',
-    proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '10/02/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l2', insumo: 'Harina de trigo', codigoLote: 'LOT-2026-0021', cantidad: 120, unidad: 'kg',
-    cantidadInicial: 500, vencimiento: '10/07/2026', ubicacion: 'Pasillo B – Rack 1 – Nivel 3',
-    proveedor: 'Industrias Unidas SAC', estado: 'bajo', fechaIngreso: '05/03/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l3', insumo: 'Aceite vegetal', codigoLote: 'LOT-2026-0009', cantidad: 30, unidad: 'L',
-    cantidadInicial: 80, vencimiento: '22/06/2026', ubicacion: 'Pasillo C – Rack 3 – Nivel 2',
-    proveedor: 'Distribuidora Lima SAC', estado: 'bajo', fechaIngreso: '15/01/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l4', insumo: 'Sal yodada', codigoLote: 'LOT-2026-0031', cantidad: 0, unidad: 'kg',
-    cantidadInicial: 300, vencimiento: '30/12/2026', ubicacion: 'Pasillo A – Rack 1 – Nivel 1',
-    proveedor: 'Salinera Perú SAC', estado: 'agotado', fechaIngreso: '20/01/2026', registradoPor: 'Pedro Salas',
-  },
-  {
-    id: 'l5', insumo: 'Huevos deshidratados', codigoLote: 'LOT-2026-0027', cantidad: 850, unidad: 'kg',
-    cantidadInicial: 1000, vencimiento: '20/09/2026', ubicacion: 'Pasillo D – Rack 2 – Nivel 1',
-    proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '28/02/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l6', insumo: 'Sémola de trigo', codigoLote: 'LOT-2026-0015', cantidad: 200, unidad: 'kg',
-    cantidadInicial: 600, vencimiento: '09/06/2026', ubicacion: 'Pasillo A – Rack 3 – Nivel 2',
-    proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '02/01/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l7', insumo: 'Quinua orgánica', codigoLote: 'LOT-2026-0035', cantidad: 400, unidad: 'kg',
-    cantidadInicial: 800, vencimiento: '20/11/2026',     ubicacion: 'Pasillo D – Rack 1 – Nivel 1',
-    proveedor: 'Andes Orgánicos SAC', estado: 'disponible', fechaIngreso: '15/04/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l8', insumo: 'Harina de trigo', codigoLote: 'LOT-2026-0038', cantidad: 250, unidad: 'kg',
-    cantidadInicial: 400, vencimiento: '05/08/2026', ubicacion: 'Pasillo B – Rack 2 – Nivel 2',
-    proveedor: 'Industrias Unidas SAC', estado: 'disponible', fechaIngreso: '20/04/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l9', insumo: 'Sémola de trigo', codigoLote: 'LOT-2026-0042', cantidad: 500, unidad: 'kg',
-    cantidadInicial: 500, vencimiento: '10/10/2026', ubicacion: 'Pasillo C – Rack 1 – Nivel 1',
-    proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '01/05/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l10', insumo: 'Aceite vegetal', codigoLote: 'LOT-2026-0045', cantidad: 15, unidad: 'L',
-    cantidadInicial: 40, vencimiento: '18/07/2026', ubicacion: 'Pasillo D – Rack 3 – Nivel 2',
-    proveedor: 'Distribuidora Lima SAC', estado: 'bajo', fechaIngreso: '10/05/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l11', insumo: 'Huevos deshidratados', codigoLote: 'LOT-2026-0048', cantidad: 600, unidad: 'kg',
-    cantidadInicial: 600, vencimiento: '25/12/2026',     ubicacion: 'Pasillo D – Rack 6 – Nivel 1',
-    proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '12/05/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l12', insumo: 'Sal yodada', codigoLote: 'LOT-2026-0050', cantidad: 80, unidad: 'kg',
-    cantidadInicial: 200, vencimiento: '30/09/2026', ubicacion: 'Pasillo D – Rack 6 – Nivel 3',
-    proveedor: 'Salinera Perú SAC', estado: 'disponible', fechaIngreso: '18/05/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l13', insumo: 'Quinua orgánica', codigoLote: 'LOT-2026-0053', cantidad: 120, unidad: 'kg',
-    cantidadInicial: 300, vencimiento: '15/11/2026', ubicacion: 'Pasillo D – Rack 5 – Nivel 2',
-    proveedor: 'Andes Orgánicos SAC', estado: 'bajo', fechaIngreso: '25/05/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l14', insumo: 'Sémola de trigo', codigoLote: 'LOT-2026-0056', cantidad: 350, unidad: 'kg',
-    cantidadInicial: 350, vencimiento: '22/12/2026', ubicacion: 'Pasillo D – Rack 4 – Nivel 1',
-    proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '01/06/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l15', insumo: 'Sémola de trigo', codigoLote: 'LOT-2026-0059', cantidad: 280, unidad: 'kg',
-    cantidadInicial: 400, vencimiento: '28/12/2026',     ubicacion: 'Pasillo D – Rack 6 – Nivel 2',
-    proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '05/06/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l16', insumo: 'Harina de trigo', codigoLote: 'LOT-2026-0062', cantidad: 180, unidad: 'kg',
-    cantidadInicial: 300, vencimiento: '15/09/2026',     ubicacion: 'Pasillo D – Rack 2 – Nivel 3',
-    proveedor: 'Industrias Unidas SAC', estado: 'disponible', fechaIngreso: '08/06/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l17', insumo: 'Aceite vegetal', codigoLote: 'LOT-2026-0065', cantidad: 25, unidad: 'L',
-    cantidadInicial: 50, vencimiento: '10/08/2026',     ubicacion: 'Pasillo A – Rack 5 – Nivel 2',
-    proveedor: 'Distribuidora Lima SAC', estado: 'disponible', fechaIngreso: '10/06/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l18', insumo: 'Sal yodada', codigoLote: 'LOT-2026-0068', cantidad: 100, unidad: 'kg',
-    cantidadInicial: 250, vencimiento: '05/01/2027',     ubicacion: 'Pasillo C – Rack 5 – Nivel 1',
-    proveedor: 'Salinera Perú SAC', estado: 'disponible', fechaIngreso: '12/06/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l19', insumo: 'Huevos deshidratados', codigoLote: 'LOT-2026-0071', cantidad: 450, unidad: 'kg',
-    cantidadInicial: 500, vencimiento: '30/01/2027',     ubicacion: 'Pasillo B – Rack 4 – Nivel 4',
-    proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '15/06/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l20', insumo: 'Quinua orgánica', codigoLote: 'LOT-2026-0074', cantidad: 200, unidad: 'kg',
-    cantidadInicial: 350, vencimiento: '20/12/2026',     ubicacion: 'Pasillo D – Rack 3 – Nivel 5',
-    proveedor: 'Andes Orgánicos SAC', estado: 'disponible', fechaIngreso: '18/06/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l21', insumo: 'Sémola de trigo', codigoLote: 'LOT-2026-0077', cantidad: 420, unidad: 'kg',
-    cantidadInicial: 420, vencimiento: '10/02/2027',     ubicacion: 'Pasillo D – Rack 4 – Nivel 2',
-    proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '20/06/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l22', insumo: 'Harina de trigo', codigoLote: 'LOT-2026-0080', cantidad: 350, unidad: 'kg',
-    cantidadInicial: 350, vencimiento: '25/10/2026',     ubicacion: 'Pasillo D – Rack 5 – Nivel 3',
-    proveedor: 'Industrias Unidas SAC', estado: 'disponible', fechaIngreso: '22/06/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l23', insumo: 'Aceite vegetal', codigoLote: 'LOT-2026-0083', cantidad: 60, unidad: 'L',
-    cantidadInicial: 60, vencimiento: '15/08/2026', ubicacion: 'Pasillo C – Rack 4 – Nivel 3',
-    proveedor: 'Distribuidora Lima SAC', estado: 'disponible', fechaIngreso: '24/06/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l24', insumo: 'Huevos deshidratados', codigoLote: 'LOT-2026-0086', cantidad: 300, unidad: 'kg',
-    cantidadInicial: 300, vencimiento: '20/02/2027', ubicacion: 'Pasillo B – Rack 3 – Nivel 5',
-    proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '26/06/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l25', insumo: 'Quinua orgánica', codigoLote: 'LOT-2026-0089', cantidad: 90, unidad: 'kg',
-    cantidadInicial: 250, vencimiento: '15/01/2027',     ubicacion: 'Pasillo A – Rack 4 – Nivel 5',
-    proveedor: 'Andes Orgánicos SAC', estado: 'bajo', fechaIngreso: '28/06/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l26', insumo: 'Sémola de trigo', codigoLote: 'LOT-2026-0092', cantidad: 150, unidad: 'kg',
-    cantidadInicial: 150, vencimiento: '28/02/2027', ubicacion: 'Pasillo A – Rack 2 – Nivel 1',
-    proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '30/06/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l27', insumo: 'Harina de trigo', codigoLote: 'LOT-2026-0095', cantidad: 80, unidad: 'kg',
-    cantidadInicial: 80, vencimiento: '05/11/2026', ubicacion: 'Pasillo B – Rack 1 – Nivel 3',
-    proveedor: 'Industrias Unidas SAC', estado: 'disponible', fechaIngreso: '30/06/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l28', insumo: 'Aceite vegetal', codigoLote: 'LOT-2026-0098', cantidad: 10, unidad: 'L',
-    cantidadInicial: 10, vencimiento: '12/08/2026', ubicacion: 'Pasillo C – Rack 3 – Nivel 2',
-    proveedor: 'Distribuidora Lima SAC', estado: 'disponible', fechaIngreso: '01/07/2026', registradoPor: 'Carlos Quispe',
-  },
-  {
-    id: 'l29', insumo: 'Huevos deshidratados', codigoLote: 'LOT-2026-0101', cantidad: 200, unidad: 'kg',
-    cantidadInicial: 200, vencimiento: '15/03/2027', ubicacion: 'Pasillo D – Rack 2 – Nivel 1',
-    proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '01/07/2026', registradoPor: 'Luis Mamani',
-  },
-  {
-    id: 'l30', insumo: 'Sal yodada', codigoLote: 'LOT-2026-0104', cantidad: 40, unidad: 'kg',
-    cantidadInicial: 40, vencimiento: '20/11/2026', ubicacion: 'Pasillo D – Rack 2 – Nivel 1',
-    proveedor: 'Salinera Perú SAC', estado: 'disponible', fechaIngreso: '01/07/2026', registradoPor: 'Carlos Quispe',
-  },
+  makeInv('l1', 'Sémola de trigo',       { codigoLote: 'LOT-2026-0018', cantidad: 700, unidad: 'kg', cantidadInicial: 1200, vencimiento: '15/08/2026', ubicacion: 'Pasillo A – Rack 2 – Nivel 1', proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '10/02/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l2', 'Harina de trigo',        { codigoLote: 'LOT-2026-0021', cantidad: 120, unidad: 'kg', cantidadInicial: 500, vencimiento: '10/07/2026', ubicacion: 'Pasillo B – Rack 1 – Nivel 3', proveedor: 'Industrias Unidas SAC', estado: 'bajo', fechaIngreso: '05/03/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l3', 'Aceite vegetal',         { codigoLote: 'LOT-2026-0009', cantidad: 30, unidad: 'L', cantidadInicial: 80, vencimiento: '22/06/2026', ubicacion: 'Pasillo C – Rack 3 – Nivel 2', proveedor: 'Distribuidora Lima SAC', estado: 'bajo', fechaIngreso: '15/01/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l4', 'Sal yodada',             { codigoLote: 'LOT-2026-0031', cantidad: 0, unidad: 'kg', cantidadInicial: 300, vencimiento: '30/12/2026', ubicacion: 'Pasillo A – Rack 1 – Nivel 1', proveedor: 'Salinera Perú SAC', estado: 'agotado', fechaIngreso: '20/01/2026', registradoPor: 'Pedro Salas' }),
+  makeInv('l5', 'Huevos deshidratados',   { codigoLote: 'LOT-2026-0027', cantidad: 850, unidad: 'kg', cantidadInicial: 1000, vencimiento: '20/09/2026', ubicacion: 'Pasillo D – Rack 2 – Nivel 1', proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '28/02/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l6', 'Sémola de trigo',        { codigoLote: 'LOT-2026-0015', cantidad: 200, unidad: 'kg', cantidadInicial: 600, vencimiento: '09/06/2026', ubicacion: 'Pasillo A – Rack 3 – Nivel 2', proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '02/01/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l7', 'Quinua orgánica',        { codigoLote: 'LOT-2026-0035', cantidad: 400, unidad: 'kg', cantidadInicial: 800, vencimiento: '20/11/2026', ubicacion: 'Pasillo D – Rack 1 – Nivel 1', proveedor: 'Andes Orgánicos SAC', estado: 'disponible', fechaIngreso: '15/04/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l8', 'Harina de trigo',        { codigoLote: 'LOT-2026-0038', cantidad: 250, unidad: 'kg', cantidadInicial: 400, vencimiento: '05/08/2026', ubicacion: 'Pasillo B – Rack 2 – Nivel 2', proveedor: 'Industrias Unidas SAC', estado: 'disponible', fechaIngreso: '20/04/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l9', 'Sémola de trigo',        { codigoLote: 'LOT-2026-0042', cantidad: 500, unidad: 'kg', cantidadInicial: 500, vencimiento: '10/10/2026', ubicacion: 'Pasillo C – Rack 1 – Nivel 1', proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '01/05/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l10', 'Aceite vegetal',        { codigoLote: 'LOT-2026-0045', cantidad: 15, unidad: 'L', cantidadInicial: 40, vencimiento: '18/07/2026', ubicacion: 'Pasillo D – Rack 3 – Nivel 2', proveedor: 'Distribuidora Lima SAC', estado: 'bajo', fechaIngreso: '10/05/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l11', 'Huevos deshidratados',  { codigoLote: 'LOT-2026-0048', cantidad: 600, unidad: 'kg', cantidadInicial: 600, vencimiento: '25/12/2026', ubicacion: 'Pasillo D – Rack 6 – Nivel 1', proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '12/05/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l12', 'Sal yodada',            { codigoLote: 'LOT-2026-0050', cantidad: 80, unidad: 'kg', cantidadInicial: 200, vencimiento: '30/09/2026', ubicacion: 'Pasillo D – Rack 6 – Nivel 3', proveedor: 'Salinera Perú SAC', estado: 'disponible', fechaIngreso: '18/05/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l13', 'Quinua orgánica',       { codigoLote: 'LOT-2026-0053', cantidad: 120, unidad: 'kg', cantidadInicial: 300, vencimiento: '15/11/2026', ubicacion: 'Pasillo D – Rack 5 – Nivel 2', proveedor: 'Andes Orgánicos SAC', estado: 'bajo', fechaIngreso: '25/05/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l14', 'Sémola de trigo',       { codigoLote: 'LOT-2026-0056', cantidad: 350, unidad: 'kg', cantidadInicial: 350, vencimiento: '22/12/2026', ubicacion: 'Pasillo D – Rack 4 – Nivel 1', proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '01/06/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l15', 'Sémola de trigo',       { codigoLote: 'LOT-2026-0059', cantidad: 280, unidad: 'kg', cantidadInicial: 400, vencimiento: '28/12/2026', ubicacion: 'Pasillo D – Rack 6 – Nivel 2', proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '05/06/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l16', 'Harina de trigo',       { codigoLote: 'LOT-2026-0062', cantidad: 180, unidad: 'kg', cantidadInicial: 300, vencimiento: '15/09/2026', ubicacion: 'Pasillo D – Rack 2 – Nivel 3', proveedor: 'Industrias Unidas SAC', estado: 'disponible', fechaIngreso: '08/06/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l17', 'Aceite vegetal',        { codigoLote: 'LOT-2026-0065', cantidad: 25, unidad: 'L', cantidadInicial: 50, vencimiento: '10/08/2026', ubicacion: 'Pasillo A – Rack 5 – Nivel 2', proveedor: 'Distribuidora Lima SAC', estado: 'disponible', fechaIngreso: '10/06/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l18', 'Sal yodada',            { codigoLote: 'LOT-2026-0068', cantidad: 100, unidad: 'kg', cantidadInicial: 250, vencimiento: '05/01/2027', ubicacion: 'Pasillo C – Rack 5 – Nivel 1', proveedor: 'Salinera Perú SAC', estado: 'disponible', fechaIngreso: '12/06/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l19', 'Huevos deshidratados',  { codigoLote: 'LOT-2026-0071', cantidad: 450, unidad: 'kg', cantidadInicial: 500, vencimiento: '30/01/2027', ubicacion: 'Pasillo B – Rack 4 – Nivel 4', proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '15/06/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l20', 'Quinua orgánica',       { codigoLote: 'LOT-2026-0074', cantidad: 200, unidad: 'kg', cantidadInicial: 350, vencimiento: '20/12/2026', ubicacion: 'Pasillo D – Rack 3 – Nivel 5', proveedor: 'Andes Orgánicos SAC', estado: 'disponible', fechaIngreso: '18/06/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l21', 'Sémola de trigo',       { codigoLote: 'LOT-2026-0077', cantidad: 420, unidad: 'kg', cantidadInicial: 420, vencimiento: '10/02/2027', ubicacion: 'Pasillo D – Rack 4 – Nivel 2', proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '20/06/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l22', 'Harina de trigo',       { codigoLote: 'LOT-2026-0080', cantidad: 350, unidad: 'kg', cantidadInicial: 350, vencimiento: '25/10/2026', ubicacion: 'Pasillo D – Rack 5 – Nivel 3', proveedor: 'Industrias Unidas SAC', estado: 'disponible', fechaIngreso: '22/06/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l23', 'Aceite vegetal',        { codigoLote: 'LOT-2026-0083', cantidad: 60, unidad: 'L', cantidadInicial: 60, vencimiento: '15/08/2026', ubicacion: 'Pasillo C – Rack 4 – Nivel 3', proveedor: 'Distribuidora Lima SAC', estado: 'disponible', fechaIngreso: '24/06/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l24', 'Huevos deshidratados',  { codigoLote: 'LOT-2026-0086', cantidad: 300, unidad: 'kg', cantidadInicial: 300, vencimiento: '20/02/2027', ubicacion: 'Pasillo B – Rack 3 – Nivel 5', proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '26/06/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l25', 'Quinua orgánica',       { codigoLote: 'LOT-2026-0089', cantidad: 90, unidad: 'kg', cantidadInicial: 250, vencimiento: '15/01/2027', ubicacion: 'Pasillo A – Rack 4 – Nivel 5', proveedor: 'Andes Orgánicos SAC', estado: 'bajo', fechaIngreso: '28/06/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l26', 'Sémola de trigo',       { codigoLote: 'LOT-2026-0092', cantidad: 150, unidad: 'kg', cantidadInicial: 150, vencimiento: '28/02/2027', ubicacion: 'Pasillo A – Rack 2 – Nivel 1', proveedor: 'Molinos del Norte SAC', estado: 'disponible', fechaIngreso: '30/06/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l27', 'Harina de trigo',       { codigoLote: 'LOT-2026-0095', cantidad: 80, unidad: 'kg', cantidadInicial: 80, vencimiento: '05/11/2026', ubicacion: 'Pasillo B – Rack 1 – Nivel 3', proveedor: 'Industrias Unidas SAC', estado: 'disponible', fechaIngreso: '30/06/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l28', 'Aceite vegetal',        { codigoLote: 'LOT-2026-0098', cantidad: 10, unidad: 'L', cantidadInicial: 10, vencimiento: '12/08/2026', ubicacion: 'Pasillo C – Rack 3 – Nivel 2', proveedor: 'Distribuidora Lima SAC', estado: 'disponible', fechaIngreso: '01/07/2026', registradoPor: 'Carlos Quispe' }),
+  makeInv('l29', 'Huevos deshidratados',  { codigoLote: 'LOT-2026-0101', cantidad: 200, unidad: 'kg', cantidadInicial: 200, vencimiento: '15/03/2027', ubicacion: 'Pasillo D – Rack 2 – Nivel 1', proveedor: 'Avícola Andina SAC', estado: 'disponible', fechaIngreso: '01/07/2026', registradoPor: 'Luis Mamani' }),
+  makeInv('l30', 'Sal yodada',            { codigoLote: 'LOT-2026-0104', cantidad: 40, unidad: 'kg', cantidadInicial: 40, vencimiento: '20/11/2026', ubicacion: 'Pasillo D – Rack 2 – Nivel 1', proveedor: 'Salinera Perú SAC', estado: 'disponible', fechaIngreso: '01/07/2026', registradoPor: 'Carlos Quispe' }),
 ]
 
 // Requerimientos de insumos — los crea el supervisor (cuando producción los solicita), los atiende el operario
 // Cada insumo tiene 'atendido' (cantidad ya despachada acumulada) y el req guarda 'atenciones' (historial de despachos)
+function addInsumoId(items) {
+  return items.map(it => ({ ...it, insumoId: INSUMO_IDS[it.insumo] }))
+}
+
 export const REQUIREMENTS = [
   {
     id: 'r1', numero: 'REQ-047', fechaSolicitud: '05/06/2026', fechaRegistro: '05/06/2026 08:30',
     registradoPor: 'Carlos Quispe', estado: 'pendiente',
     atenciones: [],
-    insumos: [
+    insumos: addInsumoId([
       { insumo: 'Sémola de trigo', cantidad: 500, unidad: 'kg', stock: 900, atendido: 0 },
       { insumo: 'Harina de trigo', cantidad: 300, unidad: 'kg', stock: 120, atendido: 0 },
       { insumo: 'Aceite vegetal', cantidad: 50, unidad: 'L', stock: 30, atendido: 0 },
-    ],
+    ]),
   },
   {
     id: 'r2', numero: 'REQ-046', fechaSolicitud: '04/06/2026', fechaRegistro: '04/06/2026 14:15',
@@ -205,10 +102,10 @@ export const REQUIREMENTS = [
     atenciones: [
       { fecha: '05/06/2026 10:15', por: 'Carlos Quispe', insumos: { 'Quinua orgánica': 50 } },
     ],
-    insumos: [
+    insumos: addInsumoId([
       { insumo: 'Quinua orgánica', cantidad: 200, unidad: 'kg', stock: 0, atendido: 50 },
       { insumo: 'Sal yodada', cantidad: 80, unidad: 'kg', stock: 0, atendido: 0 },
-    ],
+    ]),
   },
   {
     id: 'r3', numero: 'REQ-045', fechaSolicitud: '03/06/2026', fechaRegistro: '03/06/2026 09:00',
@@ -216,12 +113,12 @@ export const REQUIREMENTS = [
     atenciones: [
       { fecha: '03/06/2026 11:30', por: 'Luis Mamani', insumos: { 'Sémola de trigo': 300, 'Harina de trigo': 150, 'Huevos deshidratados': 100, 'Aceite vegetal': 20 } },
     ],
-    insumos: [
+    insumos: addInsumoId([
       { insumo: 'Sémola de trigo', cantidad: 300, unidad: 'kg', stock: 900, atendido: 300 },
       { insumo: 'Harina de trigo', cantidad: 150, unidad: 'kg', stock: 120, atendido: 150 },
       { insumo: 'Huevos deshidratados', cantidad: 100, unidad: 'kg', stock: 850, atendido: 100 },
       { insumo: 'Aceite vegetal', cantidad: 20, unidad: 'L', stock: 30, atendido: 20 },
-    ],
+    ]),
   },
   {
     id: 'r4', numero: 'REQ-044', fechaSolicitud: '02/06/2026', fechaRegistro: '02/06/2026 11:20',
@@ -229,7 +126,7 @@ export const REQUIREMENTS = [
     atenciones: [
       { fecha: '02/06/2026 14:00', por: 'Carlos Quispe', insumos: { 'Sal yodada': 40 } },
     ],
-    insumos: [{ insumo: 'Sal yodada', cantidad: 40, unidad: 'kg', stock: 0, atendido: 40 }],
+    insumos: addInsumoId([{ insumo: 'Sal yodada', cantidad: 40, unidad: 'kg', stock: 0, atendido: 40 }]),
   },
 ]
 

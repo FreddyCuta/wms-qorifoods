@@ -56,7 +56,7 @@ export function AppProvider({ children }) {
 
   // ---- Requerimientos ----
   // Atiende un requerimiento: descuenta inventario, acumula atendido por insumo y guarda historial
-  // salidaQtys: mapa de insumo → cantidad a despachar en esta atención
+  // salidaQtys: mapa de insumoId (o nombre como fallback) → cantidad a despachar
   const attendRequirement = useCallback((id, salidaQtys, currentUser) => {
     const ahora = new Date()
     const fecha = `${String(ahora.getDate()).padStart(2, '0')}/${String(ahora.getMonth() + 1).padStart(2, '0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
@@ -64,7 +64,8 @@ export function AppProvider({ children }) {
     setInventory((inv) => {
       const used = {}
       return inv.map((lot) => {
-        const qtyToTake = salidaQtys[lot.insumo]
+        const key = lot.insumoId || lot.insumo
+        const qtyToTake = salidaQtys[key]
         if (!qtyToTake || lot.cantidad <= 0) return lot
         const alreadyTaken = used[lot.codigoLote] || 0
         const remaining = qtyToTake - alreadyTaken
@@ -79,7 +80,8 @@ export function AppProvider({ children }) {
       rs.map((r) => {
         if (r.id !== id) return r
         const newInsumos = r.insumos.map((item) => {
-          const qty = salidaQtys[item.insumo] || 0
+          const key = item.insumoId || item.insumo
+          const qty = salidaQtys[key] || 0
           if (qty <= 0) return item
           return { ...item, atendido: (item.atendido || 0) + qty }
         })
@@ -105,31 +107,35 @@ export function AppProvider({ children }) {
   const alerts = useMemo(() => {
     const stockPorInsumo = {}
     inventory.forEach((lot) => {
-      stockPorInsumo[lot.insumo] = (stockPorInsumo[lot.insumo] || 0) + lot.cantidad
+      const key = lot.insumoId || lot.insumo
+      stockPorInsumo[key] = (stockPorInsumo[key] || 0) + lot.cantidad
     })
     return insumos
-      .filter((ins) => (stockPorInsumo[ins.nombre] || 0) < ins.puntoReorden)
+      .filter((ins) => (stockPorInsumo[ins.id || ins.nombre] || 0) < ins.puntoReorden)
       .map((ins) => {
-        const stockActual = stockPorInsumo[ins.nombre] || 0
+        const key = ins.id || ins.nombre
+        const stockActual = stockPorInsumo[key] || 0
         return {
-          id: `alert-${ins.nombre}`,
+          id: `alert-${key}`,
+          insumoId: ins.id,
           insumo: ins.nombre,
           stockActual,
           puntoReorden: ins.puntoReorden,
           unidad: ins.unidad,
           leadTime: ins.leadTime,
           generada: 'Automática',
-          atendida: attendedAlerts[ins.nombre] || null,
+          atendida: attendedAlerts[key] || null,
         }
       })
   }, [inventory, insumos, attendedAlerts])
 
-  // Marca una alerta como atendida
+  // Marca una alerta como atendida (usando insumoId o nombre como fallback)
   const attendAlert = useCallback((id) => {
-    const insumo = id.replace('alert-', '')
+    // id puede ser 'alert-ins_id' o 'alert-Nombre'
+    const key = id.replace('alert-', '')
     setAttendedAlerts((prev) => ({
       ...prev,
-      [insumo]: { fecha: new Date().toLocaleString('es-PE'), por: 'Supervisor' },
+      [key]: { fecha: new Date().toLocaleString('es-PE'), por: 'Supervisor' },
     }))
   }, [])
 
@@ -179,12 +185,12 @@ export function AppProvider({ children }) {
 
   // ---- Insumos ----
   const addInsumo = useCallback((insumo) => {
-    setInsumos((ins) => [...ins, insumo])
+    setInsumos((ins) => [...ins, { ...insumo, id: Math.random().toString(36).slice(2) }])
   }, [])
 
-  const updateInsumo = useCallback((oldNombre, data) => {
+  const updateInsumo = useCallback((id, data) => {
     setInsumos((ins) =>
-      ins.map((i) => (i.nombre === oldNombre ? { ...i, ...data } : i)),
+      ins.map((i) => (i.id === id ? { ...i, ...data } : i)),
     )
   }, [])
 

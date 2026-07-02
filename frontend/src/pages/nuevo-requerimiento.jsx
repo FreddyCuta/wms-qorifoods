@@ -8,13 +8,14 @@ import { Field, SelectInput, TextInput } from "../components/ui/form-field.jsx";
 import { qty } from "../lib/utils.js";
 
 function newRow() {
-  return { id: Math.random().toString(36).slice(2), insumo: "", cantidad: "" };
+  return { id: Math.random().toString(36).slice(2), insumo: "", insumoId: "", cantidad: "" };
 }
 
 function calcStock(inventory) {
   const map = {};
   inventory.forEach((lot) => {
-    map[lot.insumo] = (map[lot.insumo] || 0) + lot.cantidad;
+    const key = lot.insumoId || lot.insumo
+    map[key] = (map[key] || 0) + lot.cantidad;
   });
   return map;
 }
@@ -26,15 +27,17 @@ export default function NuevoRequerimientoPage() {
   const [numero, setNumero] = useState("");
   const [fecha, setFecha] = useState("");
   const [rows, setRows] = useState([
-    { id: "r1", insumo: "Sémola de trigo", cantidad: "500" },
-    { id: "r2", insumo: "Harina de trigo", cantidad: "300" },
+    { id: "r1", insumo: "Sémola de trigo", insumoId: "ins_1", cantidad: "500" },
+    { id: "r2", insumo: "Harina de trigo", insumoId: "ins_2", cantidad: "300" },
   ]);
   const [submitted, setSubmitted] = useState(false);
 
   const stockPorInsumo = calcStock(inventory);
   const insumoUnitMap = {};
+  const insumoNameMap = {};
   insumos.forEach((i) => {
-    insumoUnitMap[i.nombre] = i.unidad;
+    insumoUnitMap[i.id] = i.unidad;
+    insumoNameMap[i.id] = i.nombre;
   });
 
   const duplicateNumero = numero.trim() === "REQ-047";
@@ -69,9 +72,10 @@ export default function NuevoRequerimientoPage() {
       atenciones: [],
       insumos: rows.map((r) => ({
         insumo: r.insumo,
+        insumoId: r.insumoId,
         cantidad: Number(r.cantidad),
-        unidad: insumoUnitMap[r.insumo] || "kg",
-        stock: stockPorInsumo[r.insumo] || 0,
+        unidad: insumoUnitMap[r.insumoId] || 'kg',
+        stock: stockPorInsumo[r.insumoId || r.insumo] || 0,
         atendido: 0,
       })),
     });
@@ -129,7 +133,8 @@ export default function NuevoRequerimientoPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((row) => {
-                const stockVal = stockPorInsumo[row.insumo] ?? null;
+                const key = row.insumoId || row.insumo
+                const stockVal = key ? (stockPorInsumo[key] ?? null) : null;
                 const qtyError =
                   submitted && (!row.cantidad || Number(row.cantidad) <= 0);
                 const noStock = stockVal !== null && stockVal === 0;
@@ -137,14 +142,15 @@ export default function NuevoRequerimientoPage() {
                   <tr key={row.id} className="align-top">
                     <td className="px-3 py-2.5">
                       <SelectInput
-                        value={row.insumo}
-                        onChange={(e) =>
-                          updateRow(row.id, { insumo: e.target.value })
-                        }
+                        value={row.insumoId}
+                        onChange={(e) => {
+                          const id = e.target.value
+                          updateRow(row.id, { insumo: insumoNameMap[id] || '', insumoId: id })
+                        }}
                       >
                         <option value="">Seleccione...</option>
                         {insumos.map((i) => (
-                          <option key={i.nombre} value={i.nombre}>
+                          <option key={i.id} value={i.id}>
                             {i.nombre}
                           </option>
                         ))}
@@ -174,7 +180,7 @@ export default function NuevoRequerimientoPage() {
                               : "text-muted-foreground"
                           }
                         >
-                          {qty(stockVal, insumoUnitMap[row.insumo] || "kg")}
+                          {qty(stockVal, insumoUnitMap[row.insumoId] || "kg")}
                           {noStock && (
                             <span
                               title="Sin stock disponible actualmente"

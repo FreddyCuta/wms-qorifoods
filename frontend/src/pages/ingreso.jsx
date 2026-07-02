@@ -50,8 +50,9 @@ export default function IngresoPage() {
     return `LOT-2026-${String(maxNum + 1).padStart(4, '0')}`
   }, [inventory])
 
-  const proveedor = insumos.find((i) => i.nombre === insumo)?.proveedor ?? ''
-  const unidad = insumos.find((i) => i.nombre === insumo)?.unidad ?? 'kg'
+  const insumoObj = insumos.find((i) => i.id === insumo)
+  const proveedor = insumoObj?.proveedor ?? ''
+  const unidad = insumoObj?.unidad ?? 'kg'
 
   const ubicacion = pasillo && rack && nivel
     ? `Pasillo ${pasillo} – Rack ${rack} – Nivel ${nivel}`
@@ -89,7 +90,8 @@ export default function IngresoPage() {
 
     addLot({
       id: Math.random().toString(36).slice(2),
-      insumo,
+      insumo: insumoObj.nombre,
+      insumoId: insumo,
       codigoLote: nextLotNumber,
       cantidad: Number(cantidad),
       unidad,
@@ -124,7 +126,7 @@ export default function IngresoPage() {
             >
               <option value="">Seleccione un insumo...</option>
               {insumos.map((i) => (
-                <option key={i.nombre} value={i.nombre}>
+                <option key={i.id} value={i.id}>
                   {i.nombre}
                 </option>
               ))}
