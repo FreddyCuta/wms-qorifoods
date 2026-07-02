@@ -19,6 +19,10 @@ export function qty(n, unit) {
 // Convierte fecha DD/MM/YYYY a objeto Date
 export function parseDate(d) {
   if (!d) return new Date(NaN)
+  if (d.includes('-')) {
+    const [year, month, day] = d.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
   const [day, month, year] = d.split('/').map(Number)
   return new Date(year, month - 1, day)
 }
@@ -46,3 +50,14 @@ export function initInsumoMap(insumos) {
 
 export function insumoId(nombre) { return nombreAId[nombre] }
 export function insumoName(id) { return idANombre[id] }
+
+// Extrae las iniciales de un nombre (hasta 2 palabras) — ej: "María Flores" → "MF"
+export function initials(name) {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase()
+}

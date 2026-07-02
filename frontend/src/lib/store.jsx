@@ -1,202 +1,186 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
-import {
-  INSUMOS,
-  INVENTORY,
-  REQUIREMENTS,
-  TASKS,
-  USERS,
-} from './data.js'
+import * as api from './api.js'
 
-// Contexto global — reemplazar con llamadas a API cuando llegue el backend
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
-  const [users, setUsers] = useState(USERS)
-  const [inventory, setInventory] = useState(INVENTORY)
-  const [insumos, setInsumos] = useState(INSUMOS)
-  const [requirements, setRequirements] = useState(REQUIREMENTS)
-  const [tasks, setTasks] = useState(TASKS)
-  // Alertas atendidas: mapa de insumo → { fecha, por }
-  const [attendedAlerts, setAttendedAlerts] = useState({})
-  // Toasts de feedback visual — se autodestruyen a los 4 segundos
+  const [users, setUsers] = useState([])
+  const [inventory, setInventory] = useState([])
+  const [insumos, setInsumos] = useState([])
+  const [requirements, setRequirements] = useState([])
+  const [tasks, setTasks] = useState([])
+  const [alerts, setAlerts] = useState([])
+  const [ubicaciones, setUbicaciones] = useState([])
   const [toasts, setToasts] = useState([])
 
-  // ---- Toast / feedback visual ----
+  // ---- Toast ----
   const addToast = useCallback((message, variant = 'success') => {
     const id = Math.random().toString(36).slice(2)
     setToasts((t) => [...t, { id, message, variant }])
-    setTimeout(() => {
-      setToasts((t) => t.filter((x) => x.id !== id))
-    }, 4000)
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000)
   }, [])
 
   const dismissToast = useCallback((id) => {
     setToasts((t) => t.filter((x) => x.id !== id))
   }, [])
 
+  // ---- Data loaders ----
+  const loadAll = useCallback(async () => {
+    const [u, i, l, r, t, a, ub] = await Promise.all([
+      api.getUsuarios(),
+      api.getInsumos(),
+      api.getLotes(),
+      api.getRequerimientos(),
+      api.getTareas(),
+      api.getAlertas(),
+      api.getUbicaciones(),
+    ])
+    setUsers(u)
+    setInsumos(i)
+    setInventory(l.map((lot) => ({
+      ...lot,
+      ubicacion: `Pasillo ${lot.pasillo} – Rack ${lot.rack} – Nivel ${lot.nivel}`,
+    })))
+    setRequirements(r)
+    setTasks(t.map((task) => ({ ...task, status: task.estado })))
+    setAlerts(a)
+    setUbicaciones(ub)
+  }, [])
+
   // ---- Sesión ----
-  const login = useCallback((user) => setCurrentUser(user), [])
-  const logout = useCallback(() => setCurrentUser(null), [])
+  const login = useCallback(async (email, password) => {
+    const res = await api.login(email, password)
+    setCurrentUser(res.user)
+    await loadAll()
+  }, [loadAll])
 
-  /* ---- Tareas / Responsabilidades ----
-     Estas funciones van a mutar contra el backend cuando tengamos API.
-     Por ahora todo es sobre el state local. */
+  const logout = useCallback(() => {
+    setCurrentUser(null)
+    setUsers([])
+    setInsumos([])
+    setInventory([])
+    setRequirements([])
+    setTasks([])
+    setAlerts([])
+  }, [])
 
-  // Marca/desmarca una tarea como completada (toggle)
-  const completeTask = useCallback((id) => {
-    setTasks((ts) =>
-      ts.map((t) =>
-        t.id === id
-          ? { ...t, status: t.status === 'completada' ? 'pendiente' : 'completada' }
-          : t,
-      ),
-    )
+  // ---- Tareas ----
+  const completeTask = useCallback(async (id) => {
+    const updated = await api.toggleTarea(id)
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...updated, status: updated.estado } : t)))
+  }, [])
+
+  const assignTask = useCallback(async (assigneeId, description) => {
+    const created = await api.createTarea({ asignado_a_id: assigneeId, descripcion: description })
+    setTasks((prev) => [{ ...created, status: created.estado }, ...prev])
   }, [])
 
   // ---- Requerimientos ----
-  // Atiende un requerimiento: descuenta inventario, acumula atendido por insumo y guarda historial
-  // salidaQtys: mapa de insumoId (o nombre como fallback) → cantidad a despachar
-  const attendRequirement = useCallback((id, salidaQtys, currentUser) => {
-    const ahora = new Date()
-    const fecha = `${String(ahora.getDate()).padStart(2, '0')}/${String(ahora.getMonth() + 1).padStart(2, '0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+  const attendRequirement = useCallback(async (reqId, salidaQtys, atendidoPor) => {
+    const salidas = Object.entries(salidaQtys)
+      .filter(([, qty]) => qty > 0)
+      .map(([insumoId, cantidad]) => ({ insumo_id: insumoId, cantidad }))
 
-    setInventory((inv) => {
-      const used = {}
-      return inv.map((lot) => {
-        const key = lot.insumoId || lot.insumo
-        const qtyToTake = salidaQtys[key]
-        if (!qtyToTake || lot.cantidad <= 0) return lot
-        const alreadyTaken = used[lot.codigoLote] || 0
-        const remaining = qtyToTake - alreadyTaken
-        if (remaining <= 0) return lot
-        const take = Math.min(lot.cantidad, remaining)
-        used[lot.codigoLote] = alreadyTaken + take
-        const newCantidad = lot.cantidad - take
-        return { ...lot, cantidad: newCantidad, estado: newCantidad === 0 ? 'agotado' : newCantidad <= lot.cantidadInicial * 0.3 ? 'bajo' : 'disponible' }
-      })
-    })
-    setRequirements((rs) =>
-      rs.map((r) => {
-        if (r.id !== id) return r
-        const newInsumos = r.insumos.map((item) => {
-          const key = item.insumoId || item.insumo
-          const qty = salidaQtys[key] || 0
-          if (qty <= 0) return item
-          return { ...item, atendido: (item.atendido || 0) + qty }
-        })
-        const allComplete = newInsumos.every((item) => (item.atendido || 0) >= item.cantidad)
-        const anyProgress = newInsumos.some((item) => (item.atendido || 0) > 0)
-        return {
-          ...r,
-          insumos: newInsumos,
-          atenciones: [...(r.atenciones || []), { fecha, por: currentUser?.name || 'Operario', insumos: salidaQtys }],
-          estado: allComplete ? 'atendido' : anyProgress ? 'parcial' : 'pendiente',
-        }
-      }),
-    )
+    await api.atenderRequerimiento(reqId, { salidas, atendido_por_id: atendidoPor.id })
+
+    const [lotes, reqs] = await Promise.all([api.getLotes(), api.getRequerimientos()])
+    setInventory(lotes.map((lot) => ({
+      ...lot,
+      ubicacion: `Pasillo ${lot.pasillo} – Rack ${lot.rack} – Nivel ${lot.nivel}`,
+    })))
+    setRequirements(reqs)
   }, [])
 
-  // Agrega un nuevo requerimiento al listado
-  const addRequirement = useCallback((req) => {
-    setRequirements((rs) => [req, ...rs])
+  const addRequirement = useCallback(async (req) => {
+    const created = await api.createRequerimiento({
+      numero: req.numero,
+      fecha_solicitud: req.fechaSolicitud,
+      registrado_por_id: req.registrado_por_id,
+      insumos: req.insumos.map((i) => ({
+        insumo_id: i.insumoId,
+        cantidad: i.cantidad,
+        unidad: i.unidad || 'kg',
+        stock_snapshot: i.stock || 0,
+      })),
+    })
+    setRequirements((prev) => [created, ...prev])
   }, [])
 
-  // ---- Alertas dinámicas ----
-  // Las alertas se calculan automáticamente comparando stock total de cada insumo vs su punto de reorden
-  const alerts = useMemo(() => {
-    const stockPorInsumo = {}
-    inventory.forEach((lot) => {
-      const key = lot.insumoId || lot.insumo
-      stockPorInsumo[key] = (stockPorInsumo[key] || 0) + lot.cantidad
-    })
-    return insumos
-      .filter((ins) => (stockPorInsumo[ins.id || ins.nombre] || 0) < ins.puntoReorden)
-      .map((ins) => {
-        const key = ins.id || ins.nombre
-        const stockActual = stockPorInsumo[key] || 0
-        return {
-          id: `alert-${key}`,
-          insumoId: ins.id,
-          insumo: ins.nombre,
-          stockActual,
-          puntoReorden: ins.puntoReorden,
-          unidad: ins.unidad,
-          leadTime: ins.leadTime,
-          generada: 'Automática',
-          atendida: attendedAlerts[key] || null,
-        }
-      })
-  }, [inventory, insumos, attendedAlerts])
-
-  // Marca una alerta como atendida (usando insumoId o nombre como fallback)
-  const attendAlert = useCallback((id) => {
-    // id puede ser 'alert-ins_id' o 'alert-Nombre'
-    const key = id.replace('alert-', '')
-    setAttendedAlerts((prev) => ({
-      ...prev,
-      [key]: { fecha: new Date().toLocaleString('es-PE'), por: 'Supervisor' },
-    }))
+  // ---- Alertas ----
+  const attendAlert = useCallback(async (insumoId, atendidoPorId) => {
+    await api.atenderAlerta({ insumo_id: insumoId, atendido_por_id: atendidoPorId })
+    const updated = await api.getAlertas()
+    setAlerts(updated)
   }, [])
 
   // ---- Usuarios ----
-  // Activar / desactivar usuario (toggle)
-  const toggleUserActive = useCallback((id) => {
-    setUsers((us) => us.map((u) => (u.id === id ? { ...u, active: !u.active } : u)))
+  const toggleUserActive = useCallback(async (id) => {
+    const updated = await api.toggleUsuarioActive(id)
+    setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)))
   }, [])
 
-  // Agregar usuario nuevo (genera un id random, el backend haría esto)
-  const addUser = useCallback((u) => {
-    setUsers((us) => [...us, { ...u, id: Math.random().toString(36).slice(2) }])
+  const addUser = useCallback(async (u) => {
+    const created = await api.createUsuario({
+      nombre: u.name,
+      email: u.email,
+      password: u.password,
+      rol: u.role,
+    })
+    setUsers((prev) => [...prev, created])
   }, [])
 
-  // Actualiza datos de un usuario existente (nombre, rol, contraseña)
-  const updateUser = useCallback((id, data) => {
-    setUsers((us) => us.map((u) => (u.id === id ? { ...u, ...data } : u)))
+  const updateUser = useCallback(async (id, data) => {
+    const updated = await api.updateUsuario(id, {
+      nombre: data.name,
+      password: data.password,
+      rol: data.role,
+    })
+    setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)))
   }, [])
 
-  // ---- Tareas (asignación) ----
-  // Busca al usuario por id y crea una tarea con su nombre
-  const assignTask = useCallback(
-    (assigneeId, description) => {
-      const assignee = users.find((u) => u.id === assigneeId)
-      if (assignee) {
-        setTasks((ts) => [
-          {
-            id: Math.random().toString(36).slice(2),
-            assigneeId,
-            assigneeName: assignee.name,
-            description,
-            timestamp: 'Ahora',
-            status: 'pendiente',
-          },
-          ...ts,
-        ])
-      }
-    },
-    [users],
-  )
-
-  // ---- Inventario / Lotes ----
-  // Agrega un nuevo lote al inventario (lo usa el operario al registrar ingreso)
-  const addLot = useCallback((lot) => {
-    setInventory((inv) => [...inv, lot])
+  // ---- Inventario ----
+  const addLot = useCallback(async (lot) => {
+    const created = await api.createLote({
+      insumo_id: lot.insumoId,
+      cantidad: lot.cantidad,
+      vencimiento: lot.vencimiento,
+      ubicacion_id: lot.ubicacionId,
+      proveedor: lot.proveedor,
+      registrado_por_id: lot.registradoPorId,
+    })
+    setInventory((prev) => [{
+      ...created,
+      ubicacion: `Pasillo ${created.pasillo} – Rack ${created.rack} – Nivel ${created.nivel}`,
+    }, ...prev])
   }, [])
 
   // ---- Insumos ----
-  const addInsumo = useCallback((insumo) => {
-    setInsumos((ins) => [...ins, { ...insumo, id: Math.random().toString(36).slice(2) }])
+  const addInsumo = useCallback(async (insumo) => {
+    const created = await api.createInsumo({
+      nombre: insumo.nombre,
+      proveedor: insumo.proveedor,
+      unidad: insumo.unidad,
+      punto_reorden: insumo.puntoReorden,
+      lead_time: insumo.leadTime,
+    })
+    setInsumos((prev) => [...prev, created])
   }, [])
 
-  const updateInsumo = useCallback((id, data) => {
-    setInsumos((ins) =>
-      ins.map((i) => (i.id === id ? { ...i, ...data } : i)),
-    )
+  const updateInsumo = useCallback(async (id, data) => {
+    const updated = await api.updateInsumo(id, {
+      nombre: data.nombre,
+      proveedor: data.proveedor,
+      unidad: data.unidad,
+      punto_reorden: data.puntoReorden,
+      lead_time: data.leadTime,
+    })
+    setInsumos((prev) => prev.map((i) => (i.id === id ? updated : i)))
   }, [])
 
   // ---- Contadores derivados ----
   const activeAlertCount = useMemo(
-    () => alerts.filter((a) => !a.atendida).length,
+    () => alerts.filter((a) => !a.atendidaId).length,
     [alerts],
   )
   const pendingReqCount = useMemo(
@@ -204,7 +188,6 @@ export function AppProvider({ children }) {
     [requirements],
   )
 
-  // Todo lo que se expone a los componentes vía contexto
   const value = {
     currentUser,
     users,
@@ -213,6 +196,7 @@ export function AppProvider({ children }) {
     requirements,
     alerts,
     tasks,
+    ubicaciones,
     toasts,
     activeAlertCount,
     pendingReqCount,
@@ -236,7 +220,7 @@ export function AppProvider({ children }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
 
-// Hook para consumir el contexto desde cualquier componente
+// eslint-disable-next-line react-refresh/only-export-components
 export function useApp() {
   const ctx = useContext(AppContext)
   if (!ctx) throw new Error('useApp must be used within AppProvider')

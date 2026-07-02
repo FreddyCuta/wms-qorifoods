@@ -1,5 +1,5 @@
-import { useCallback, useState, useRef, useEffect } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { useCallback, useState, useEffect } from 'react'
+import { Canvas } from '@react-three/fiber'
 import { WarehouseScene } from './warehouse-scene.jsx'
 import { RotateCcw, X, Package, MapPin, Calendar, User, AlertTriangle } from 'lucide-react'
 import { cn, qty } from '../../lib/utils.js'
@@ -79,34 +79,9 @@ function InfoPanel({ item, onClose }) {
   )
 }
 
-function CameraReset({ onReset }) {
-  const { camera } = useThree()
-  const defaultPos = useRef(null)
-
-  useEffect(() => {
-    if (!defaultPos.current) {
-      defaultPos.current = camera.position.clone()
-    }
-  }, [camera])
-
-  useEffect(() => {
-    if (onReset) {
-      onReset.current = () => {
-        if (defaultPos.current) {
-          camera.position.copy(defaultPos.current)
-          camera.lookAt(0, 1, 0)
-        }
-      }
-    }
-  }, [camera, onReset])
-
-  return null
-}
-
 export function WarehousePanel({
   selectedItem,
   onSelectBox,
-  onHoverItem,
   compact,
   showToolbar = true,
   showInfoPanel = true,
@@ -115,7 +90,6 @@ export function WarehousePanel({
   onCursorChange,
 }) {
   const [resetKey, setResetKey] = useState(0)
-  const resetFnRef = useRef(null)
   const [internalSelected, setInternalSelected] = useState(null)
   const [cursorInfo, setCursorInfo] = useState({ pasillo: 'B', rack: 3, nivel: 3, ocupados: 0, libres: 5 })
 
@@ -135,11 +109,7 @@ export function WarehousePanel({
   }, [onCursorChange])
 
   const handleResetCamera = useCallback(() => {
-    if (resetFnRef.current) {
-      resetFnRef.current()
-    } else {
-      setResetKey((k) => k + 1)
-    }
+    setResetKey((k) => k + 1)
   }, [])
 
   const handleKeyDown = useCallback((e) => {
@@ -169,7 +139,6 @@ export function WarehousePanel({
           selectedItem={item}
           onCursorChange={handleCursorChange}
         />
-        {showToolbar && <CameraReset onReset={resetFnRef} />}
       </Canvas>
 
       <div className={cn(

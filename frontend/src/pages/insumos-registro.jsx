@@ -1,71 +1,77 @@
-import { useRef, useState } from 'react'
-import { Pencil, X } from 'lucide-react'
-import { useApp } from '../lib/store.jsx'
-import { AppShell } from '../components/app-shell.jsx'
-import { ActionButton } from '../components/ui/action-button.jsx'
-import { Field, SelectInput, TextInput } from '../components/ui/form-field.jsx'
-import { cn } from '../lib/utils.js'
+import { useRef, useState } from "react";
+import { Pencil } from "lucide-react";
+import { useApp } from "../lib/store.jsx";
+import { AppShell } from "../components/app-shell.jsx";
+import { ActionButton } from "../components/ui/action-button.jsx";
+import { Field, SelectInput, TextInput } from "../components/ui/form-field.jsx";
+import { cn } from "../lib/utils.js";
 
 // Registro (y edición) de insumos en el catálogo del sistema — solo jefe
 // El formulario sirve tanto para crear como para editar, dependiendo del estado "editing"
 export default function InsumosRegistroPage() {
-  const { addInsumo, updateInsumo, addToast, insumos } = useApp()
-  const formRef = useRef(null)
-  const [nombre, setNombre] = useState('')
-  const [proveedor, setProveedor] = useState('')
-  const [unidad, setUnidad] = useState('kg')
-  const [puntoReorden, setPuntoReorden] = useState('')
-  const [errors, setErrors] = useState({})
-  const [editing, setEditing] = useState(null)
+  const { addInsumo, updateInsumo, addToast, insumos } = useApp();
+  const formRef = useRef(null);
+  const [nombre, setNombre] = useState("");
+  const [proveedor, setProveedor] = useState("");
+  const [unidad, setUnidad] = useState("kg");
+  const [puntoReorden, setPuntoReorden] = useState("");
+  const [errors, setErrors] = useState({});
+  const [editing, setEditing] = useState(null);
 
-  const isEditing = editing !== null
+  const isEditing = editing !== null;
 
   // Al empezar a editar, se cargan los datos del insumo en el formulario
   function startEdit(insumo) {
-    setEditing(insumo)
-    setNombre(insumo.nombre)
-    setProveedor(insumo.proveedor)
-    setUnidad(insumo.unidad)
-    setPuntoReorden(String(insumo.puntoReorden))
-    setErrors({})
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setEditing(insumo);
+    setNombre(insumo.nombre);
+    setProveedor(insumo.proveedor);
+    setUnidad(insumo.unidad);
+    setPuntoReorden(String(insumo.puntoReorden));
+    setErrors({});
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   // Cancela la edición y limpia el formulario
   function cancelEdit() {
-    setEditing(null)
-    setNombre('')
-    setProveedor('')
-    setUnidad('kg')
-    setPuntoReorden('')
-    setErrors({})
+    setEditing(null);
+    setNombre("");
+    setProveedor("");
+    setUnidad("kg");
+    setPuntoReorden("");
+    setErrors({});
   }
 
   // Validación: nombre obligatorio, sin duplicados (salvo que sea el mismo insumo en edición), proveedor obligatorio, ROP >= 0
   function validateForm() {
-    const next = {}
-    if (!nombre.trim()) next.nombre = 'Este campo es obligatorio.'
+    const next = {};
+    if (!nombre.trim()) next.nombre = "Este campo es obligatorio.";
     if (!isEditing) {
-      if (insumos.some((i) => i.nombre.toLowerCase() === nombre.toLowerCase())) {
-        next.nombre = 'Este insumo ya existe en el sistema.'
+      if (
+        insumos.some((i) => i.nombre.toLowerCase() === nombre.toLowerCase())
+      ) {
+        next.nombre = "Este insumo ya existe en el sistema.";
       }
     } else {
-      const nombreCambio = nombre.trim().toLowerCase() !== editing.nombre.toLowerCase()
-      if (nombreCambio && insumos.some((i) => i.nombre.toLowerCase() === nombre.toLowerCase())) {
-        next.nombre = 'Este insumo ya existe en el sistema.'
+      const nombreCambio =
+        nombre.trim().toLowerCase() !== editing.nombre.toLowerCase();
+      if (
+        nombreCambio &&
+        insumos.some((i) => i.nombre.toLowerCase() === nombre.toLowerCase())
+      ) {
+        next.nombre = "Este insumo ya existe en el sistema.";
       }
     }
-    if (!proveedor.trim()) next.proveedor = 'Este campo es obligatorio.'
-    if (puntoReorden === '' || Number(puntoReorden) < 0) {
-      next.puntoReorden = 'Ingresa un número válido mayor o igual a 0.'
+    if (!proveedor.trim()) next.proveedor = "Este campo es obligatorio.";
+    if (puntoReorden === "" || Number(puntoReorden) < 0) {
+      next.puntoReorden = "Ingresa un número válido mayor o igual a 0.";
     }
-    setErrors(next)
-    return Object.keys(next).length === 0
+    setErrors(next);
+    return Object.keys(next).length === 0;
   }
 
   function handleSubmit(e) {
-    e.preventDefault()
-    if (!validateForm()) return
+    e.preventDefault();
+    if (!validateForm()) return;
     // Si estamos en modo edición, actualiza el insumo existente; si no, crea uno nuevo
     if (isEditing) {
       updateInsumo(editing.id, {
@@ -73,27 +79,34 @@ export default function InsumosRegistroPage() {
         proveedor: proveedor.trim(),
         unidad,
         puntoReorden: Number(puntoReorden),
-      })
-      addToast(`Insumo "${nombre}" actualizado exitosamente.`)
-      cancelEdit()
+      });
+      addToast(`Insumo "${nombre}" actualizado exitosamente.`);
+      cancelEdit();
     } else {
       addInsumo({
         nombre: nombre.trim(),
         proveedor: proveedor.trim(),
         unidad,
         puntoReorden: Number(puntoReorden),
-      })
-      setNombre(''); setProveedor(''); setUnidad('kg'); setPuntoReorden(''); setErrors({})
-      addToast(`Insumo "${nombre}" registrado exitosamente.`)
+      });
+      setNombre("");
+      setProveedor("");
+      setUnidad("kg");
+      setPuntoReorden("");
+      setErrors({});
+      addToast(`Insumo "${nombre}" registrado exitosamente.`);
     }
   }
 
   return (
-    <AppShell title="Registrar Insumo" allowedRoles={['jefe']}>
+    <AppShell title="Registrar Insumo" allowedRoles={["jefe"]}>
       <div className="mx-auto max-w-2xl">
-        <div ref={formRef} className="rounded-lg border border-border bg-card p-6">
+        <div
+          ref={formRef}
+          className="rounded-lg border border-border bg-card p-6"
+        >
           <h2 className="mb-6 text-lg font-semibold text-foreground">
-            {isEditing ? 'Editar insumo' : 'Agregar nuevo insumo al sistema'}
+            {isEditing ? "Editar insumo" : "Agregar nuevo insumo al sistema"}
           </h2>
 
           {isEditing && (
@@ -124,7 +137,10 @@ export default function InsumosRegistroPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <Field label="Unidad de medida">
-                <SelectInput value={unidad} onChange={(e) => setUnidad(e.target.value)}>
+                <SelectInput
+                  value={unidad}
+                  onChange={(e) => setUnidad(e.target.value)}
+                >
                   <option value="kg">Kilogramos (kg)</option>
                   <option value="L">Litros (L)</option>
                 </SelectInput>
@@ -150,12 +166,16 @@ export default function InsumosRegistroPage() {
 
             <div className="mt-6 flex gap-2">
               {isEditing && (
-                <ActionButton variant="ghost" type="button" onClick={cancelEdit}>
+                <ActionButton
+                  variant="ghost"
+                  type="button"
+                  onClick={cancelEdit}
+                >
                   Cancelar
                 </ActionButton>
               )}
               <ActionButton type="submit" fullWidth={!isEditing}>
-                {isEditing ? 'Guardar cambios' : 'Registrar insumo'}
+                {isEditing ? "Guardar cambios" : "Registrar insumo"}
               </ActionButton>
             </div>
           </form>
@@ -171,15 +191,19 @@ export default function InsumosRegistroPage() {
                 <div
                   key={idx}
                   className={cn(
-                    'flex items-center justify-between rounded-md border px-3 py-2 text-sm',
+                    "flex items-center justify-between rounded-md border px-3 py-2 text-sm",
                     isEditing && editing.nombre === insumo.nombre
-                      ? 'border-primary/40 bg-accent/30'
-                      : 'border-border/50 bg-muted/40',
+                      ? "border-primary/40 bg-accent/30"
+                      : "border-border/50 bg-muted/40",
                   )}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium text-foreground">{insumo.nombre}</div>
-                    <div className="text-xs text-muted-foreground">{insumo.proveedor}</div>
+                    <div className="font-medium text-foreground">
+                      {insumo.nombre}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {insumo.proveedor}
+                    </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 ml-4">
                     <div className="text-right">
@@ -203,5 +227,5 @@ export default function InsumosRegistroPage() {
         )}
       </div>
     </AppShell>
-  )
+  );
 }

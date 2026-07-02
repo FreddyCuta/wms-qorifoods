@@ -1,33 +1,55 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from "react";
 import {
-  Package, AlertTriangle, ClipboardList, Bell, Boxes,
-  ChevronDown, ChevronRight, CheckCircle,
-  Calendar, User,
-} from 'lucide-react'
-import { useApp } from '../lib/store.jsx'
-import { AppShell } from '../components/app-shell.jsx'
-import { Badge } from '../components/ui/status-badge.jsx'
-import { cn, fmt, qty, parseDate, daysUntil } from '../lib/utils.js'
+  Package,
+  AlertTriangle,
+  ClipboardList,
+  Bell,
+  Boxes,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle,
+  Calendar,
+  User,
+} from "lucide-react";
+import { useApp } from "../lib/store.jsx";
+import { AppShell } from "../components/app-shell.jsx";
+import { Badge } from "../components/ui/status-badge.jsx";
+import { cn, fmt, qty, parseDate, daysUntil } from "../lib/utils.js";
 
 function parseDateTime(dtStr) {
-  const [datePart, timePart] = dtStr.split(' ')
-  const [d, m, y] = datePart.split('/').map(Number)
-  const [hh, mm] = timePart ? timePart.split(':').map(Number) : [0, 0]
-  return new Date(y, m - 1, d, hh, mm).getTime()
+  if (!dtStr) return 0;
+  const [datePart, timePart] = dtStr.split("T");
+  let y, m, d, hh, mm;
+  if (datePart.includes("-")) {
+    [y, m, d] = datePart.split("-").map(Number);
+  } else {
+    [d, m, y] = datePart.split("/").map(Number);
+  }
+  if (timePart) {
+    [hh, mm] = timePart.split(":").map(Number);
+  } else {
+    hh = 0; mm = 0;
+  }
+  return new Date(y, m - 1, d, hh, mm).getTime();
 }
 
 function InitialsAvatar({ name, className }) {
   const initials = name
-    .split(' ')
+    .split(" ")
     .map((w) => w[0])
-    .join('')
+    .join("")
     .slice(0, 2)
-    .toUpperCase()
+    .toUpperCase();
   return (
-    <span className={cn('inline-flex size-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary', className)}>
+    <span
+      className={cn(
+        "inline-flex size-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary",
+        className,
+      )}
+    >
       {initials}
     </span>
-  )
+  );
 }
 
 function SectionTitle({ children }) {
@@ -36,7 +58,7 @@ function SectionTitle({ children }) {
       <h2 className="text-lg font-bold text-foreground">{children}</h2>
       <div className="mt-1.5 h-px bg-border" />
     </div>
-  )
+  );
 }
 
 function EmptyState({ icon, children }) {
@@ -45,7 +67,7 @@ function EmptyState({ icon, children }) {
       {icon}
       <p className="mt-2 text-sm">{children}</p>
     </div>
-  )
+  );
 }
 
 function PulseDot() {
@@ -54,96 +76,128 @@ function PulseDot() {
       <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75" />
       <span className="relative inline-flex size-2 rounded-full bg-warning" />
     </span>
-  )
+  );
 }
 
 export default function DashboardPage() {
-  const { currentUser, inventory, insumos, requirements, alerts, tasks, users } = useApp()
-  const [expandedRow, setExpandedRow] = useState(null)
+  const {
+    currentUser,
+    inventory,
+    insumos,
+    requirements,
+    alerts,
+    tasks,
+    users,
+  } = useApp();
+  const [expandedRow, setExpandedRow] = useState(null);
 
   const toggleRow = useCallback((nombre) => {
-    setExpandedRow((prev) => (prev === nombre ? null : nombre))
-  }, [])
+    setExpandedRow((prev) => (prev === nombre ? null : nombre));
+  }, []);
 
-  const lotesActivos = useMemo(() => inventory.filter((l) => l.cantidad > 0), [inventory])
+  const lotesActivos = useMemo(
+    () => inventory.filter((l) => l.cantidad > 0),
+    [inventory],
+  );
 
   const stockPorInsumo = useMemo(() => {
-    const map = {}
+    const map = {};
     inventory.forEach((l) => {
-      map[l.insumo] = (map[l.insumo] || 0) + l.cantidad
-    })
-    return map
-  }, [inventory])
+      map[l.insumo] = (map[l.insumo] || 0) + l.cantidad;
+    });
+    return map;
+  }, [inventory]);
 
   const kpiData = useMemo(() => {
-    const insumosRegistrados = insumos.length
-    const lotesActivosCount = lotesActivos.length
+    const insumosRegistrados = insumos.length;
+    const lotesActivosCount = lotesActivos.length;
 
     const stockCritico = insumos.filter((ins) => {
-      const total = stockPorInsumo[ins.nombre] || 0
-      return total < ins.puntoReorden
-    }).length
+      const total = stockPorInsumo[ins.nombre] || 0;
+      return total < ins.puntoReorden;
+    }).length;
 
-    const reqsPendientes = requirements.filter((r) => r.estado === 'pendiente').length
-    const alertasActivas = alerts.filter((a) => !a.atendida).length
+    const reqsPendientes = requirements.filter(
+      (r) => r.estado === "pendiente",
+    ).length;
+    const alertasActivas = alerts.filter((a) => !a.atendidaId).length;
 
-    return { insumosRegistrados, lotesActivosCount, stockCritico, reqsPendientes, alertasActivas }
-  }, [insumos, lotesActivos, stockPorInsumo, requirements, alerts])
+    return {
+      insumosRegistrados,
+      lotesActivosCount,
+      stockCritico,
+      reqsPendientes,
+      alertasActivas,
+    };
+  }, [insumos, lotesActivos, stockPorInsumo, requirements, alerts]);
 
   const uniqueReqDays = useMemo(() => {
-    const days = new Set()
+    const days = new Set();
     requirements
-      .filter((r) => r.estado === 'atendido' || r.estado === 'parcial')
-      .forEach((r) => days.add(r.fechaSolicitud))
-    return days.size
-  }, [requirements])
+      .filter((r) => r.estado === "atendido" || r.estado === "parcial")
+      .forEach((r) => days.add(r.fechaSolicitud));
+    return days.size;
+  }, [requirements]);
 
   const consumoDiarioPorInsumo = useMemo(() => {
-    const map = {}
+    const map = {};
     requirements
-      .filter((r) => r.estado === 'atendido' || r.estado === 'parcial')
+      .filter((r) => r.estado === "atendido" || r.estado === "parcial")
       .forEach((r) => {
         r.insumos.forEach((i) => {
-          map[i.insumo] = (map[i.insumo] || 0) + i.cantidad
-        })
-      })
-    return map
-  }, [requirements])
+          map[i.insumo] = (map[i.insumo] || 0) + i.cantidad;
+        });
+      });
+    return map;
+  }, [requirements]);
 
   const insumoStatusData = useMemo(() => {
     return insumos.map((ins) => {
-      const stockTotal = stockPorInsumo[ins.nombre] || 0
-      const lotesCount = inventory.filter((l) => l.insumo === ins.nombre && l.cantidad > 0).length
+      const stockTotal = stockPorInsumo[ins.nombre] || 0;
+      const lotesCount = inventory.filter(
+        (l) => l.insumo === ins.nombre && l.cantidad > 0,
+      ).length;
 
-      const totalDespachado = consumoDiarioPorInsumo[ins.nombre] || 0
-      const consumoPromedio = uniqueReqDays > 0 ? totalDespachado / uniqueReqDays : 0
-      const cobertura = consumoPromedio > 0 ? Math.round(stockTotal / consumoPromedio) : null
+      const totalDespachado = consumoDiarioPorInsumo[ins.nombre] || 0;
+      const consumoPromedio =
+        uniqueReqDays > 0 ? totalDespachado / uniqueReqDays : 0;
+      const cobertura =
+        consumoPromedio > 0 ? Math.round(stockTotal / consumoPromedio) : null;
 
-      const alerta = alerts.find((a) => a.insumo === ins.nombre && !a.atendida)
-      const leadTime = alerta ? alerta.leadTime : null
+      const alerta = alerts.find((a) => a.insumo === ins.nombre && !a.atendidaId);
+      const leadTime = alerta ? alerta.leadTime : null;
 
-      let estado
-      let estadoColor
+      let estado;
+      let estadoColor;
       if (stockTotal === 0) {
-        estado = 'Agotado'
-        estadoColor = 'red'
+        estado = "Agotado";
+        estadoColor = "red";
       } else if (stockTotal <= ins.puntoReorden) {
-        estado = 'Stock bajo'
-        estadoColor = 'amber'
+        estado = "Stock bajo";
+        estadoColor = "amber";
       } else {
-        estado = 'Normal'
-        estadoColor = 'green'
+        estado = "Normal";
+        estadoColor = "green";
       }
 
-      const maxCapacidad = Math.max(...inventory.filter((l) => l.insumo === ins.nombre).map((l) => l.cantidadInicial), 1000)
+      const maxCapacidad = Math.max(
+        ...inventory
+          .filter((l) => l.insumo === ins.nombre)
+          .map((l) => l.cantidadInicial),
+        1000,
+      );
 
-      const activeLotes = inventory
-        .filter((l) => l.insumo === ins.nombre && l.cantidad > 0)
+      const activeLotes = inventory.filter(
+        (l) => l.insumo === ins.nombre && l.cantidad > 0,
+      );
 
       const reqsRelacionados = requirements
         .filter((r) => r.insumos.some((i) => i.insumo === ins.nombre))
-        .sort((a, b) => parseDateTime(b.fechaRegistro) - parseDateTime(a.fechaRegistro))
-        .slice(0, 3)
+        .sort(
+          (a, b) =>
+            parseDateTime(b.fechaRegistro) - parseDateTime(a.fechaRegistro),
+        )
+        .slice(0, 3);
 
       return {
         ...ins,
@@ -157,60 +211,75 @@ export default function DashboardPage() {
         maxCapacidad,
         activeLotes,
         reqsRelacionados,
-      }
-    })
-  }, [insumos, stockPorInsumo, inventory, consumoDiarioPorInsumo, uniqueReqDays, alerts, requirements])
+      };
+    });
+  }, [
+    insumos,
+    stockPorInsumo,
+    inventory,
+    consumoDiarioPorInsumo,
+    uniqueReqDays,
+    alerts,
+    requirements,
+  ]);
 
   const recentRequirements = useMemo(() => {
     return [...requirements]
-      .sort((a, b) => parseDateTime(b.fechaRegistro) - parseDateTime(a.fechaRegistro))
-      .slice(0, 8)
-  }, [requirements])
+      .sort(
+        (a, b) =>
+          parseDateTime(b.fechaRegistro) - parseDateTime(a.fechaRegistro),
+      )
+      .slice(0, 8);
+  }, [requirements]);
 
   const expiringLotes = useMemo(() => {
     return [...lotesActivos]
       .sort((a, b) => {
-        const da = parseDate(a.vencimiento)
-        const db = parseDate(b.vencimiento)
-        return da - db
+        const da = parseDate(a.vencimiento);
+        const db = parseDate(b.vencimiento);
+        return da - db;
       })
-      .slice(0, 8)
-  }, [lotesActivos])
+      .slice(0, 8);
+  }, [lotesActivos]);
 
   const hasUrgentExpiring = useMemo(() => {
-    return expiringLotes.some((l) => daysUntil(l.vencimiento) <= 30)
-  }, [expiringLotes])
+    return expiringLotes.some((l) => daysUntil(l.vencimiento) <= 30);
+  }, [expiringLotes]);
 
   const activeRequirements = useMemo(() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     return requirements
-      .filter((r) => r.estado === 'pendiente' || r.estado === 'parcial')
+      .filter((r) => r.estado === "pendiente" || r.estado === "parcial")
       .map((r) => ({
         ...r,
-        diasEspera: Math.ceil((today - parseDate(r.fechaSolicitud)) / (1000 * 60 * 60 * 24)),
-      }))
-  }, [requirements])
+        diasEspera: Math.ceil(
+          (today - parseDate(r.fechaSolicitud)) / (1000 * 60 * 60 * 24),
+        ),
+      }));
+  }, [requirements]);
 
   const teamActivity = useMemo(() => {
-    if (currentUser.role !== 'jefe') return { members: [], lastTasks: [] }
-    const activeUsers = users.filter((u) => u.active && u.id !== currentUser.id)
+    if (currentUser.role !== "jefe") return { members: [], lastTasks: [] };
+    const activeUsers = users.filter(
+      (u) => u.active && u.id !== currentUser.id,
+    );
     const members = activeUsers.map((u) => {
-      const userTasks = tasks.filter((t) => t.assigneeId === u.id)
+      const userTasks = tasks.filter((t) => t.assigneeId === u.id);
       return {
         ...u,
-        pendingCount: userTasks.filter((t) => t.status === 'pendiente').length,
-        completedCount: userTasks.filter((t) => t.status === 'completada').length,
-      }
-    })
-    const lastTasks = tasks.slice(0, 5)
-    return { members, lastTasks }
-  }, [users, tasks, currentUser])
+        pendingCount: userTasks.filter((t) => t.status === "pendiente").length,
+        completedCount: userTasks.filter((t) => t.status === "completada")
+          .length,
+      };
+    });
+    const lastTasks = tasks.slice(0, 5);
+    return { members, lastTasks };
+  }, [users, tasks, currentUser]);
 
   return (
-    <AppShell title="Dashboard" allowedRoles={['jefe']}>
+    <AppShell title="Dashboard" allowedRoles={["jefe"]}>
       <div className="space-y-8">
-
         {/* ───── Section 1: KPI Cards ───── */}
         <section>
           <SectionTitle>Resumen del Almacén</SectionTitle>
@@ -234,24 +303,30 @@ export default function DashboardPage() {
               value={kpiData.stockCritico}
               label="Stock crítico"
               borderColor="border-l-red-500"
-              iconColor={kpiData.stockCritico > 0 ? 'text-red-500' : 'text-green-600'}
-              valueColor={kpiData.stockCritico > 0 ? 'text-red-500' : ''}
+              iconColor={
+                kpiData.stockCritico > 0 ? "text-red-500" : "text-green-600"
+              }
+              valueColor={kpiData.stockCritico > 0 ? "text-red-500" : ""}
             />
             <KpiCard
               icon={<ClipboardList className="size-5" />}
               value={kpiData.reqsPendientes}
               label="Requerimientos pendientes"
               borderColor="border-l-amber-500"
-              iconColor={kpiData.reqsPendientes > 0 ? 'text-amber-500' : 'text-green-600'}
-              valueColor={kpiData.reqsPendientes > 0 ? 'text-amber-500' : ''}
+              iconColor={
+                kpiData.reqsPendientes > 0 ? "text-amber-500" : "text-green-600"
+              }
+              valueColor={kpiData.reqsPendientes > 0 ? "text-amber-500" : ""}
             />
             <KpiCard
               icon={<Bell className="size-5" />}
               value={kpiData.alertasActivas}
               label="Alertas activas"
               borderColor="border-l-red-500"
-              iconColor={kpiData.alertasActivas > 0 ? 'text-red-500' : 'text-green-600'}
-              valueColor={kpiData.alertasActivas > 0 ? 'text-red-500' : ''}
+              iconColor={
+                kpiData.alertasActivas > 0 ? "text-red-500" : "text-green-600"
+              }
+              valueColor={kpiData.alertasActivas > 0 ? "text-red-500" : ""}
             />
           </div>
         </section>
@@ -278,41 +353,64 @@ export default function DashboardPage() {
               <tbody className="divide-y divide-border">
                 {insumoStatusData.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                    <td
+                      colSpan={10}
+                      className="px-4 py-12 text-center text-sm text-muted-foreground"
+                    >
                       No hay insumos registrados.
                     </td>
                   </tr>
                 ) : (
                   insumoStatusData.map((row) => {
-                    const isExpanded = expandedRow === row.nombre
-                    const rowBg = row.estado === 'Agotado'
-                      ? 'bg-critical/5'
-                      : row.estado === 'Stock bajo'
-                        ? 'bg-warning/5'
-                        : ''
-                    const borderLeft = row.estado === 'Agotado'
-                      ? 'border-l-2 border-l-red-400'
-                      : row.estado === 'Stock bajo'
-                        ? 'border-l-2 border-l-amber-400'
-                        : 'border-l-2 border-l-transparent'
+                    const isExpanded = expandedRow === row.nombre;
+                    const rowBg =
+                      row.estado === "Agotado"
+                        ? "bg-critical/5"
+                        : row.estado === "Stock bajo"
+                          ? "bg-warning/5"
+                          : "";
+                    const borderLeft =
+                      row.estado === "Agotado"
+                        ? "border-l-2 border-l-red-400"
+                        : row.estado === "Stock bajo"
+                          ? "border-l-2 border-l-amber-400"
+                          : "border-l-2 border-l-transparent";
                     return (
                       <>
                         <tr
                           key={row.nombre}
-                          className={cn('cursor-pointer transition-colors hover:bg-muted/50', rowBg, borderLeft)}
+                          className={cn(
+                            "cursor-pointer transition-colors hover:bg-muted/50",
+                            rowBg,
+                            borderLeft,
+                          )}
                           onClick={() => toggleRow(row.nombre)}
                         >
-                          <td className="px-4 py-3 font-medium text-foreground">{row.nombre}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{row.proveedor}</td>
-                          <td className="px-4 py-3 font-medium text-foreground">{qty(row.stockTotal, row.unidad)}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{qty(row.puntoReorden, row.unidad)}</td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {row.cobertura !== null ? `${row.cobertura} días` : 'Sin datos'}
+                          <td className="px-4 py-3 font-medium text-foreground">
+                            {row.nombre}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {row.leadTime !== null ? `${row.leadTime} días` : '—'}
+                            {row.proveedor}
                           </td>
-                          <td className="px-4 py-3 text-foreground">{row.lotesCount}</td>
+                          <td className="px-4 py-3 font-medium text-foreground">
+                            {qty(row.stockTotal, row.unidad)}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {qty(row.puntoReorden, row.unidad)}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {row.cobertura !== null
+                              ? `${row.cobertura} días`
+                              : "Sin datos"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {row.leadTime !== null
+                              ? `${row.leadTime} días`
+                              : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-foreground">
+                            {row.lotesCount}
+                          </td>
                           <td className="px-4 py-3">
                             <Badge color={row.estadoColor}>{row.estado}</Badge>
                           </td>
@@ -324,7 +422,11 @@ export default function DashboardPage() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                            {isExpanded ? (
+                              <ChevronDown className="size-4" />
+                            ) : (
+                              <ChevronRight className="size-4" />
+                            )}
                           </td>
                         </tr>
                         {isExpanded && (
@@ -336,29 +438,61 @@ export default function DashboardPage() {
                                     Lotes activos
                                   </h4>
                                   {row.activeLotes.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">Sin lotes activos.</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Sin lotes activos.
+                                    </p>
                                   ) : (
                                     <div className="overflow-x-auto rounded border border-border">
                                       <table className="w-full text-xs">
                                         <thead>
                                           <tr className="bg-muted/50 text-left text-muted-foreground">
-                                            <th className="px-3 py-2">Código</th>
-                                            <th className="px-3 py-2">Cantidad</th>
-                                            <th className="px-3 py-2">Vencimiento</th>
-                                            <th className="px-3 py-2">Ubicación</th>
-                                            <th className="px-3 py-2">Estado</th>
+                                            <th className="px-3 py-2">
+                                              Código
+                                            </th>
+                                            <th className="px-3 py-2">
+                                              Cantidad
+                                            </th>
+                                            <th className="px-3 py-2">
+                                              Vencimiento
+                                            </th>
+                                            <th className="px-3 py-2">
+                                              Ubicación
+                                            </th>
+                                            <th className="px-3 py-2">
+                                              Estado
+                                            </th>
                                           </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border">
                                           {row.activeLotes.map((l) => (
                                             <tr key={l.id}>
-                                              <td className="px-3 py-2 font-medium text-foreground">{l.codigoLote}</td>
-                                              <td className="px-3 py-2 text-muted-foreground">{qty(l.cantidad, l.unidad)}</td>
-                                              <td className="px-3 py-2 text-muted-foreground">{l.vencimiento}</td>
-                                              <td className="px-3 py-2 text-muted-foreground">{l.ubicacion}</td>
+                                              <td className="px-3 py-2 font-medium text-foreground">
+                                                {l.codigoLote}
+                                              </td>
+                                              <td className="px-3 py-2 text-muted-foreground">
+                                                {qty(l.cantidad, l.unidad)}
+                                              </td>
+                                              <td className="px-3 py-2 text-muted-foreground">
+                                                {l.vencimiento}
+                                              </td>
+                                              <td className="px-3 py-2 text-muted-foreground">
+                                                {l.ubicacion}
+                                              </td>
                                               <td className="px-3 py-2">
-                                                <Badge color={l.estado === 'disponible' ? 'green' : l.estado === 'bajo' ? 'amber' : 'red'}>
-                                                  {l.estado === 'disponible' ? 'Disponible' : l.estado === 'bajo' ? 'Stock bajo' : 'Agotado'}
+                                                <Badge
+                                                  color={
+                                                    l.estado === "disponible"
+                                                      ? "green"
+                                                      : l.estado === "bajo"
+                                                        ? "amber"
+                                                        : "red"
+                                                  }
+                                                >
+                                                  {l.estado === "disponible"
+                                                    ? "Disponible"
+                                                    : l.estado === "bajo"
+                                                      ? "Stock bajo"
+                                                      : "Agotado"}
                                                 </Badge>
                                               </td>
                                             </tr>
@@ -373,7 +507,9 @@ export default function DashboardPage() {
                                     Últimos requerimientos
                                   </h4>
                                   {row.reqsRelacionados.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">Sin requerimientos previos.</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Sin requerimientos previos.
+                                    </p>
                                   ) : (
                                     <div className="overflow-x-auto rounded border border-border">
                                       <table className="w-full text-xs">
@@ -381,27 +517,54 @@ export default function DashboardPage() {
                                           <tr className="bg-muted/50 text-left text-muted-foreground">
                                             <th className="px-3 py-2">N°</th>
                                             <th className="px-3 py-2">Fecha</th>
-                                            <th className="px-3 py-2">Cantidad solicitada</th>
-                                            <th className="px-3 py-2">Estado</th>
+                                            <th className="px-3 py-2">
+                                              Cantidad solicitada
+                                            </th>
+                                            <th className="px-3 py-2">
+                                              Estado
+                                            </th>
                                           </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border">
                                           {row.reqsRelacionados.map((r) => {
-                                            const ins = r.insumos.find((i) => i.insumo === row.nombre)
+                                            const ins = r.insumos.find(
+                                              (i) => i.insumo === row.nombre,
+                                            );
                                             return (
                                               <tr key={r.id}>
-                                                <td className="px-3 py-2 font-medium text-foreground">{r.numero}</td>
-                                                <td className="px-3 py-2 text-muted-foreground">{r.fechaSolicitud}</td>
+                                                <td className="px-3 py-2 font-medium text-foreground">
+                                                  {r.numero}
+                                                </td>
                                                 <td className="px-3 py-2 text-muted-foreground">
-                                                  {ins ? qty(ins.cantidad, ins.unidad) : '—'}
+                                                  {r.fechaSolicitud}
+                                                </td>
+                                                <td className="px-3 py-2 text-muted-foreground">
+                                                  {ins
+                                                    ? qty(
+                                                        ins.cantidad,
+                                                        ins.unidad,
+                                                      )
+                                                    : "—"}
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                  <Badge color={r.estado === 'atendido' ? 'green' : r.estado === 'parcial' ? 'amber' : 'blue'}>
-                                                    {r.estado === 'atendido' ? 'Atendido' : r.estado === 'parcial' ? 'Parcial' : 'Pendiente'}
+                                                  <Badge
+                                                    color={
+                                                      r.estado === "atendido"
+                                                        ? "green"
+                                                        : r.estado === "parcial"
+                                                          ? "amber"
+                                                          : "blue"
+                                                    }
+                                                  >
+                                                    {r.estado === "atendido"
+                                                      ? "Atendido"
+                                                      : r.estado === "parcial"
+                                                        ? "Parcial"
+                                                        : "Pendiente"}
                                                   </Badge>
                                                 </td>
                                               </tr>
-                                            )
+                                            );
                                           })}
                                         </tbody>
                                       </table>
@@ -413,7 +576,7 @@ export default function DashboardPage() {
                           </tr>
                         )}
                       </>
-                    )
+                    );
                   })
                 )}
               </tbody>
@@ -423,12 +586,16 @@ export default function DashboardPage() {
 
         {/* ───── Section 3: Two columns ───── */}
         <section>
-          <SectionTitle>Movimientos recientes y Lotes próximos a vencer</SectionTitle>
+          <SectionTitle>
+            Movimientos recientes y Lotes próximos a vencer
+          </SectionTitle>
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Left: Recent movements */}
             <div className="rounded-lg border border-border">
               <div className="border-b border-border px-4 py-3">
-                <h3 className="text-sm font-bold text-foreground">Movimientos recientes</h3>
+                <h3 className="text-sm font-bold text-foreground">
+                  Movimientos recientes
+                </h3>
               </div>
               <div className="divide-y divide-border">
                 {recentRequirements.length === 0 ? (
@@ -437,16 +604,39 @@ export default function DashboardPage() {
                   </EmptyState>
                 ) : (
                   recentRequirements.map((r) => (
-                    <div key={r.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                    <div
+                      key={r.id}
+                      className="flex items-center gap-3 px-4 py-3 text-sm"
+                    >
                       <div className="flex shrink-0 items-center gap-1.5">
-                        {r.estado === 'pendiente' && <PulseDot />}
-                        <span className="font-medium text-foreground">{r.numero}</span>
+                        {r.estado === "pendiente" && <PulseDot />}
+                        <span className="font-medium text-foreground">
+                          {r.numero}
+                        </span>
                       </div>
-                      <span className="text-muted-foreground">{r.fechaRegistro}</span>
-                      <span className="text-muted-foreground">{r.registradoPor}</span>
-                      <span className="ml-auto text-muted-foreground">{r.insumos.length} insumos</span>
-                      <Badge color={r.estado === 'atendido' ? 'green' : r.estado === 'parcial' ? 'amber' : 'blue'}>
-                        {r.estado === 'atendido' ? 'Atendido' : r.estado === 'parcial' ? 'Parcial' : 'Pendiente'}
+                      <span className="text-muted-foreground">
+                        {r.fechaRegistro}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {r.registradoPor}
+                      </span>
+                      <span className="ml-auto text-muted-foreground">
+                        {r.insumos.length} insumos
+                      </span>
+                      <Badge
+                        color={
+                          r.estado === "atendido"
+                            ? "green"
+                            : r.estado === "parcial"
+                              ? "amber"
+                              : "blue"
+                        }
+                      >
+                        {r.estado === "atendido"
+                          ? "Atendido"
+                          : r.estado === "parcial"
+                            ? "Parcial"
+                            : "Pendiente"}
                       </Badge>
                     </div>
                   ))
@@ -457,33 +647,47 @@ export default function DashboardPage() {
             {/* Right: Expiring lots */}
             <div className="rounded-lg border border-border">
               <div className="border-b border-border px-4 py-3">
-                <h3 className="text-sm font-bold text-foreground">Lotes próximos a vencer</h3>
+                <h3 className="text-sm font-bold text-foreground">
+                  Lotes próximos a vencer
+                </h3>
               </div>
               <div className="divide-y divide-border">
                 {!hasUrgentExpiring ? (
-                  <EmptyState icon={<CheckCircle className="size-8 text-green-500" />}>
-                    Todos los lotes están dentro del rango seguro de vencimiento.
+                  <EmptyState
+                    icon={<CheckCircle className="size-8 text-green-500" />}
+                  >
+                    Todos los lotes están dentro del rango seguro de
+                    vencimiento.
                   </EmptyState>
                 ) : (
                   expiringLotes.map((l) => {
-                    const remaining = daysUntil(l.vencimiento)
-                    let urgBadge = null
+                    const remaining = daysUntil(l.vencimiento);
+                    let urgBadge = null;
                     if (remaining <= 7) {
-                      urgBadge = <Badge color="red">Urgente</Badge>
+                      urgBadge = <Badge color="red">Urgente</Badge>;
                     } else if (remaining <= 30) {
-                      urgBadge = <Badge color="amber">Próximo</Badge>
+                      urgBadge = <Badge color="amber">Próximo</Badge>;
                     }
                     return (
-                      <div key={l.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                      <div
+                        key={l.id}
+                        className="flex items-center gap-3 px-4 py-3 text-sm"
+                      >
                         <Calendar className="size-4 shrink-0 text-muted-foreground" />
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium text-foreground">{l.insumo}</div>
-                          <div className="text-xs text-muted-foreground">{l.codigoLote} · {qty(l.cantidad, l.unidad)}</div>
+                          <div className="font-medium text-foreground">
+                            {l.insumo}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {l.codigoLote} · {qty(l.cantidad, l.unidad)}
+                          </div>
                         </div>
-                        <span className="shrink-0 text-xs text-muted-foreground">{l.vencimiento}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {l.vencimiento}
+                        </span>
                         {urgBadge}
                       </div>
-                    )
+                    );
                   })
                 )}
               </div>
@@ -502,21 +706,31 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-4">
                 {insumoStatusData.map((row) => {
-                  const pct = Math.min(100, (row.stockTotal / row.maxCapacidad) * 100)
-                  const barColor = row.estadoColor === 'green'
-                    ? 'bg-green-600'
-                    : row.estadoColor === 'amber'
-                      ? 'bg-amber-500'
-                      : 'bg-red-500'
+                  const pct = Math.min(
+                    100,
+                    (row.stockTotal / row.maxCapacidad) * 100,
+                  );
+                  const barColor =
+                    row.estadoColor === "green"
+                      ? "bg-green-600"
+                      : row.estadoColor === "amber"
+                        ? "bg-amber-500"
+                        : "bg-red-500";
                   return (
                     <div key={row.nombre} className="flex items-center gap-4">
-                      <span className="w-40 shrink-0 truncate text-sm font-medium text-foreground" title={row.nombre}>
+                      <span
+                        className="w-40 shrink-0 truncate text-sm font-medium text-foreground"
+                        title={row.nombre}
+                      >
                         {row.nombre}
                       </span>
                       <div className="flex-1">
                         <div className="h-4 w-full overflow-hidden rounded-full bg-muted">
                           <div
-                            className={cn('h-full rounded-full transition-all duration-600 ease-out', barColor)}
+                            className={cn(
+                              "h-full rounded-full transition-all duration-600 ease-out",
+                              barColor,
+                            )}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -526,7 +740,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -538,7 +752,9 @@ export default function DashboardPage() {
           <SectionTitle>Requerimientos Activos</SectionTitle>
           <div className="overflow-x-auto rounded-lg border border-border">
             {activeRequirements.length === 0 ? (
-              <EmptyState icon={<CheckCircle className="size-8 text-green-500" />}>
+              <EmptyState
+                icon={<CheckCircle className="size-8 text-green-500" />}
+              >
                 No hay requerimientos pendientes de atención.
               </EmptyState>
             ) : (
@@ -558,27 +774,49 @@ export default function DashboardPage() {
                     const insumosText = r.insumos
                       .slice(0, 2)
                       .map((i) => `${i.insumo} (${i.cantidad}${i.unidad})`)
-                      .join(', ')
-                    const hasMore = r.insumos.length > 2
+                      .join(", ");
+                    const hasMore = r.insumos.length > 2;
                     return (
-                      <tr key={r.id} className="transition-colors hover:bg-muted/50">
-                        <td className="px-4 py-3 font-medium text-foreground">{r.numero}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{r.fechaSolicitud}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{r.registradoPor}</td>
+                      <tr
+                        key={r.id}
+                        className="transition-colors hover:bg-muted/50"
+                      >
+                        <td className="px-4 py-3 font-medium text-foreground">
+                          {r.numero}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {r.fechaSolicitud}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {r.registradoPor}
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {insumosText}
-                          {hasMore && <span className="text-xs text-muted-foreground">…</span>}
+                          {hasMore && (
+                            <span className="text-xs text-muted-foreground">
+                              …
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge color={r.estado === 'pendiente' ? 'blue' : 'amber'}>
-                            {r.estado === 'pendiente' ? 'Pendiente' : 'Parcial'}
+                          <Badge
+                            color={r.estado === "pendiente" ? "blue" : "amber"}
+                          >
+                            {r.estado === "pendiente" ? "Pendiente" : "Parcial"}
                           </Badge>
                         </td>
-                        <td className={cn('px-4 py-3 font-medium', r.diasEspera > 2 ? 'text-red-500' : 'text-muted-foreground')}>
+                        <td
+                          className={cn(
+                            "px-4 py-3 font-medium",
+                            r.diasEspera > 2
+                              ? "text-red-500"
+                              : "text-muted-foreground",
+                          )}
+                        >
                           {r.diasEspera} días
                         </td>
                       </tr>
-                    )
+                    );
                   })}
                 </tbody>
               </table>
@@ -587,14 +825,16 @@ export default function DashboardPage() {
         </section>
 
         {/* ───── Section 6: Team Activity (jefe only) ───── */}
-        {currentUser.role === 'jefe' && (
+        {currentUser.role === "jefe" && (
           <section>
             <SectionTitle>Resumen de Usuarios y Responsabilidades</SectionTitle>
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Left: Team activity */}
               <div className="rounded-lg border border-border">
                 <div className="border-b border-border px-4 py-3">
-                  <h3 className="text-sm font-bold text-foreground">Actividad del equipo</h3>
+                  <h3 className="text-sm font-bold text-foreground">
+                    Actividad del equipo
+                  </h3>
                 </div>
                 <div className="divide-y divide-border">
                   {teamActivity.members.length === 0 ? (
@@ -603,19 +843,36 @@ export default function DashboardPage() {
                     </EmptyState>
                   ) : (
                     teamActivity.members.map((m) => (
-                      <div key={m.id} className="flex items-center gap-3 px-4 py-3">
-                        <InitialsAvatar name={m.name} />
+                      <div
+                        key={m.id}
+                        className="flex items-center gap-3 px-4 py-3"
+                      >
+                        <InitialsAvatar name={m.nombre} />
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium text-foreground">{m.name}</div>
-                          <Badge color={m.role === 'supervisor' ? 'amber' : 'gray'}>
-                            {m.role === 'supervisor' ? 'Supervisor' : 'Operario'}
+                          <div className="text-sm font-medium text-foreground">
+                            {m.nombre}
+                          </div>
+                          <Badge
+                            color={m.role === "supervisor" ? "amber" : "gray"}
+                          >
+                            {m.role === "supervisor"
+                              ? "Supervisor"
+                              : "Operario"}
                           </Badge>
                         </div>
                         <div className="text-right text-xs text-muted-foreground">
-                          <div className={m.pendingCount > 2 ? 'text-red-500 font-medium' : ''}>
+                          <div
+                            className={
+                              m.pendingCount > 2
+                                ? "text-red-500 font-medium"
+                                : ""
+                            }
+                          >
                             Tareas pendientes: {m.pendingCount}
                           </div>
-                          <div className="text-green-600">Completadas: {m.completedCount}</div>
+                          <div className="text-green-600">
+                            Completadas: {m.completedCount}
+                          </div>
                         </div>
                       </div>
                     ))
@@ -626,7 +883,9 @@ export default function DashboardPage() {
               {/* Right: Last responsibilities */}
               <div className="rounded-lg border border-border">
                 <div className="border-b border-border px-4 py-3">
-                  <h3 className="text-sm font-bold text-foreground">Últimas responsabilidades asignadas</h3>
+                  <h3 className="text-sm font-bold text-foreground">
+                    Últimas responsabilidades asignadas
+                  </h3>
                 </div>
                 <div className="divide-y divide-border">
                   {teamActivity.lastTasks.length === 0 ? (
@@ -635,16 +894,30 @@ export default function DashboardPage() {
                     </EmptyState>
                   ) : (
                     teamActivity.lastTasks.map((t) => (
-                      <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-3 px-4 py-3"
+                      >
                         <InitialsAvatar name={t.assigneeName} />
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm text-foreground" title={t.description}>
-                            {t.description.length > 60 ? `${t.description.slice(0, 60)}…` : t.description}
+                          <div
+                            className="text-sm text-foreground"
+                            title={t.description}
+                          >
+                            {t.description.length > 60
+                              ? `${t.description.slice(0, 60)}…`
+                              : t.description}
                           </div>
-                          <div className="text-xs text-muted-foreground">{t.timestamp}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {t.timestamp}
+                          </div>
                         </div>
-                        <Badge color={t.status === 'completada' ? 'green' : 'amber'}>
-                          {t.status === 'completada' ? 'Completada' : 'Pendiente'}
+                        <Badge
+                          color={t.status === "completada" ? "green" : "amber"}
+                        >
+                          {t.status === "completada"
+                            ? "Completada"
+                            : "Pendiente"}
                         </Badge>
                       </div>
                     ))
@@ -654,24 +927,38 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
-
       </div>
     </AppShell>
-  )
+  );
 }
 
 function KpiCard({ icon, value, label, borderColor, iconColor, valueColor }) {
   return (
-    <div className={cn('flex items-center gap-4 rounded-lg border border-border bg-card border-l-4 px-4 py-4', borderColor)}>
-      <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-md bg-muted', iconColor)}>
+    <div
+      className={cn(
+        "flex items-center gap-4 rounded-lg border border-border bg-card border-l-4 px-4 py-4",
+        borderColor,
+      )}
+    >
+      <div
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-md bg-muted",
+          iconColor,
+        )}
+      >
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className={cn('text-2xl font-bold leading-none text-foreground', valueColor)}>
+        <div
+          className={cn(
+            "text-2xl font-bold leading-none text-foreground",
+            valueColor,
+          )}
+        >
           {fmt(value)}
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
       </div>
     </div>
-  )
+  );
 }
