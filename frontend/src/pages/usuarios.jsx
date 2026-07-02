@@ -16,7 +16,7 @@ function roleBadge(role) {
 
 // Gestión de usuarios del sistema — solo el jefe de almacén puede crear, editar o desactivar cuentas
 export default function UsuariosPage() {
-  const { users, currentUser, tasks, toggleUserActive, addUser, addToast } = useApp()
+  const { users, currentUser, tasks, toggleUserActive, addUser, updateUser, addToast } = useApp()
   const [modal, setModal] = useState({ kind: 'none' })
 
   function pendingTasksFor(userId) {
@@ -101,8 +101,8 @@ export default function UsuariosPage() {
       {modal.kind === 'create' && (
         <CreateUserModal
           onClose={() => setModal({ kind: 'none' })}
-          onCreate={(name, email, role) => {
-            addUser({ name, email, role, active: true })
+          onCreate={(name, email, password, role) => {
+            addUser({ name, email, password, role, active: true })
             setModal({ kind: 'none' })
             addToast('Usuario creado correctamente.')
           }}
@@ -113,7 +113,11 @@ export default function UsuariosPage() {
         <EditUserModal
           user={modal.user}
           onClose={() => setModal({ kind: 'none' })}
-          onSave={() => { setModal({ kind: 'none' }); addToast('Cambios guardados correctamente.') }}
+          onSave={(id, data) => {
+            updateUser(id, data)
+            setModal({ kind: 'none' })
+            addToast('Cambios guardados correctamente.')
+          }}
         />
       )}
       {/* Modal para desactivar — advierte si el usuario tiene tareas pendientes asignadas */}
@@ -174,7 +178,7 @@ function CreateUserModal({ onClose, onCreate }) {
   function handle() {
     setSubmitted(true)
     if (!name.trim() || emailExists || pass !== confirm || !pass) return
-    onCreate(name.trim(), email.trim().toLowerCase(), role)
+    onCreate(name.trim(), email.trim().toLowerCase(), pass, role)
   }
 
   return (
@@ -212,6 +216,17 @@ function EditUserModal({ user, onClose, onSave }) {
   const [role, setRole] = useState(user.role)
   const [pass, setPass] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [confirmError, setConfirmError] = useState('')
+
+  function handleSave() {
+    if (pass && pass !== confirm) {
+      setConfirmError('Las contraseñas no coinciden.')
+      return
+    }
+    const data = { name: name.trim(), role }
+    if (pass) data.password = pass
+    onSave(user.id, data)
+  }
 
   return (
     <Modal open onClose={onClose} title="Editar usuario">
@@ -228,8 +243,8 @@ function EditUserModal({ user, onClose, onSave }) {
         <Field label="Nuevo password">
           <PasswordInputControlled value={pass} onChange={setPass} placeholder="Dejar en blanco para no cambiar" />
         </Field>
-        <Field label="Confirmar nuevo password">
-          <PasswordInputControlled value={confirm} onChange={setConfirm} />
+        <Field label="Confirmar nuevo password" error={confirmError}>
+          <PasswordInputControlled value={confirm} onChange={setConfirm} invalid={!!confirmError} />
         </Field>
         <Field label="Rol">
           <SelectInput value={role} onChange={(e) => setRole(e.target.value)}>
@@ -240,7 +255,7 @@ function EditUserModal({ user, onClose, onSave }) {
       </div>
       <ModalFooter>
         <ActionButton variant="ghost" onClick={onClose}>Cancelar</ActionButton>
-        <ActionButton onClick={onSave}>Guardar cambios</ActionButton>
+        <ActionButton onClick={handleSave}>Guardar cambios</ActionButton>
       </ModalFooter>
     </Modal>
   )

@@ -9,9 +9,8 @@ export function Topbar({ title }) {
   const navigate = useNavigate()
   if (!currentUser) return null
 
-  // La campana de alertas solo se muestra para jefe y supervisor porque el operario
-  // no gestiona reabastecimientos — no tiene sentido mostrarle notificaciones que no puede atender.
-  const showBell = currentUser.role === 'jefe' || currentUser.role === 'supervisor'
+  // La campana de alertas solo se muestra para el supervisor porque es quien gestiona reabastecimientos
+  const showBell = currentUser.role === 'supervisor'
 
   return (
     <header className="fixed inset-x-0 left-60 top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-card px-8">

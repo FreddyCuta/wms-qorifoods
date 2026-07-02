@@ -68,7 +68,7 @@ export default function InsumosRegistroPage() {
     if (!validateForm()) return
     // Si estamos en modo edición, actualiza el insumo existente; si no, crea uno nuevo
     if (isEditing) {
-      updateInsumo(editing.nombre, {
+      updateInsumo(editing.id, {
         nombre: nombre.trim(),
         proveedor: proveedor.trim(),
         unidad,

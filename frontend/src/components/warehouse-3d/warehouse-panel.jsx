@@ -1,7 +1,7 @@
 import { useCallback, useState, useRef, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { WarehouseScene } from './warehouse-scene.jsx'
-import { RotateCcw, Crosshair, Package, MapPin, Calendar, User, AlertTriangle } from 'lucide-react'
+import { RotateCcw, X, Package, MapPin, Calendar, User, AlertTriangle } from 'lucide-react'
 import { cn, qty } from '../../lib/utils.js'
 
 const STATUS_STYLE = {
@@ -32,7 +32,7 @@ function InfoPanel({ item, onClose }) {
           onClick={onClose}
           className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          <Crosshair className="size-3.5 rotate-45" />
+          <X className="size-3.5" />
         </button>
       </div>
 
@@ -112,10 +112,12 @@ export function WarehousePanel({
   showInfoPanel = true,
   height,
   className,
+  onCursorChange,
 }) {
   const [resetKey, setResetKey] = useState(0)
   const resetFnRef = useRef(null)
   const [internalSelected, setInternalSelected] = useState(null)
+  const [cursorInfo, setCursorInfo] = useState({ pasillo: 'B', rack: 3, nivel: 3, ocupados: 0, libres: 5 })
 
   const item = selectedItem || internalSelected
 
@@ -126,6 +128,11 @@ export function WarehousePanel({
       setInternalSelected((prev) => (prev?.id === boxItem?.id ? null : boxItem))
     }
   }, [onSelectBox])
+
+  const handleCursorChange = useCallback((info) => {
+    setCursorInfo(info)
+    onCursorChange?.(info)
+  }, [onCursorChange])
 
   const handleResetCamera = useCallback(() => {
     if (resetFnRef.current) {
@@ -153,18 +160,35 @@ export function WarehousePanel({
       <Canvas
         key={resetKey}
         shadows
-        camera={{ position: compact ? [12, 8, 12] : [14, 10, 14], fov: compact ? 50 : 45 }}
+        camera={{ position: compact ? [14, 10, 14] : [18, 14, 18], fov: compact ? 50 : 40 }}
         gl={{ antialias: true }}
         dpr={[1, 1.5]}
       >
         <WarehouseScene
           onSelectBox={handleSelectBox}
           selectedItem={item}
-          onHoverItem={onHoverItem}
-          compact={compact}
+          onCursorChange={handleCursorChange}
         />
         {showToolbar && <CameraReset onReset={resetFnRef} />}
       </Canvas>
+
+      <div className={cn(
+        'pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center',
+        compact ? 'p-1' : 'p-2',
+      )}>
+        <div className={cn(
+          'pointer-events-auto flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-1.5 shadow-lg backdrop-blur-sm',
+          compact ? 'text-[10px]' : 'text-xs',
+        )}>
+          <span className="font-medium text-foreground">
+            {cursorInfo.pasillo} <span className="text-muted-foreground">/</span> Rack {cursorInfo.rack} <span className="text-muted-foreground">/</span> Nivel {cursorInfo.nivel}
+          </span>
+          <span className="text-muted-foreground">·</span>
+          <span className={cursorInfo.libres === 0 ? 'text-critical font-medium' : 'text-muted-foreground'}>
+            {cursorInfo.ocupados}/5 ocupados · {cursorInfo.libres} libre{cursorInfo.libres !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
 
       {showInfoPanel && item && (
         <div className={cn(
@@ -200,7 +224,7 @@ export function WarehousePanel({
               <>
                 <div className="h-3 w-px bg-border" />
                 <span className="text-[10px] text-muted-foreground px-1">
-                  WASD para caminar · R resetear
+                  R para resetear
                 </span>
               </>
             )}

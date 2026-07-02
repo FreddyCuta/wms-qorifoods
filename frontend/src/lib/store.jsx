@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import {
-  ALERTS,
   INSUMOS,
   INVENTORY,
   REQUIREMENTS,
@@ -14,11 +13,12 @@ const AppContext = createContext(null)
 export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [users, setUsers] = useState(USERS)
-  const [inventory] = useState(INVENTORY) // el inventario es solo lectura por ahora
+  const [inventory, setInventory] = useState(INVENTORY)
   const [insumos, setInsumos] = useState(INSUMOS)
   const [requirements, setRequirements] = useState(REQUIREMENTS)
-  const [alerts, setAlerts] = useState(ALERTS)
   const [tasks, setTasks] = useState(TASKS)
+  // Alertas atendidas: mapa de insumo → { fecha, por }
+  const [attendedAlerts, setAttendedAlerts] = useState({})
   // Toasts de feedback visual — se autodestruyen a los 4 segundos
   const [toasts, setToasts] = useState([])
 
@@ -55,27 +55,88 @@ export function AppProvider({ children }) {
   }, [])
 
   // ---- Requerimientos ----
-  // Cambia el estado del requerimiento: si algún insumo falta stock, queda como "parcial"
-  const attendRequirement = useCallback((id) => {
+  // Atiende un requerimiento: descuenta inventario, acumula atendido por insumo y guarda historial
+  // salidaQtys: mapa de insumoId (o nombre como fallback) → cantidad a despachar
+  const attendRequirement = useCallback((id, salidaQtys, currentUser) => {
+    const ahora = new Date()
+    const fecha = `${String(ahora.getDate()).padStart(2, '0')}/${String(ahora.getMonth() + 1).padStart(2, '0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+
+    setInventory((inv) => {
+      const used = {}
+      return inv.map((lot) => {
+        const key = lot.insumoId || lot.insumo
+        const qtyToTake = salidaQtys[key]
+        if (!qtyToTake || lot.cantidad <= 0) return lot
+        const alreadyTaken = used[lot.codigoLote] || 0
+        const remaining = qtyToTake - alreadyTaken
+        if (remaining <= 0) return lot
+        const take = Math.min(lot.cantidad, remaining)
+        used[lot.codigoLote] = alreadyTaken + take
+        const newCantidad = lot.cantidad - take
+        return { ...lot, cantidad: newCantidad, estado: newCantidad === 0 ? 'agotado' : newCantidad <= lot.cantidadInicial * 0.3 ? 'bajo' : 'disponible' }
+      })
+    })
     setRequirements((rs) =>
       rs.map((r) => {
         if (r.id !== id) return r
-        const insufficient = r.insumos.some((i) => i.stock < i.cantidad)
-        return { ...r, estado: insufficient ? 'parcial' : 'atendido' }
+        const newInsumos = r.insumos.map((item) => {
+          const key = item.insumoId || item.insumo
+          const qty = salidaQtys[key] || 0
+          if (qty <= 0) return item
+          return { ...item, atendido: (item.atendido || 0) + qty }
+        })
+        const allComplete = newInsumos.every((item) => (item.atendido || 0) >= item.cantidad)
+        const anyProgress = newInsumos.some((item) => (item.atendido || 0) > 0)
+        return {
+          ...r,
+          insumos: newInsumos,
+          atenciones: [...(r.atenciones || []), { fecha, por: currentUser?.name || 'Operario', insumos: salidaQtys }],
+          estado: allComplete ? 'atendido' : anyProgress ? 'parcial' : 'pendiente',
+        }
       }),
     )
   }, [])
 
-  // ---- Alertas ----
-  // Marca una alerta como atendida con fecha y responsable (hardcodeado por ahora)
+  // Agrega un nuevo requerimiento al listado
+  const addRequirement = useCallback((req) => {
+    setRequirements((rs) => [req, ...rs])
+  }, [])
+
+  // ---- Alertas dinámicas ----
+  // Las alertas se calculan automáticamente comparando stock total de cada insumo vs su punto de reorden
+  const alerts = useMemo(() => {
+    const stockPorInsumo = {}
+    inventory.forEach((lot) => {
+      const key = lot.insumoId || lot.insumo
+      stockPorInsumo[key] = (stockPorInsumo[key] || 0) + lot.cantidad
+    })
+    return insumos
+      .filter((ins) => (stockPorInsumo[ins.id || ins.nombre] || 0) < ins.puntoReorden)
+      .map((ins) => {
+        const key = ins.id || ins.nombre
+        const stockActual = stockPorInsumo[key] || 0
+        return {
+          id: `alert-${key}`,
+          insumoId: ins.id,
+          insumo: ins.nombre,
+          stockActual,
+          puntoReorden: ins.puntoReorden,
+          unidad: ins.unidad,
+          leadTime: ins.leadTime,
+          generada: 'Automática',
+          atendida: attendedAlerts[key] || null,
+        }
+      })
+  }, [inventory, insumos, attendedAlerts])
+
+  // Marca una alerta como atendida (usando insumoId o nombre como fallback)
   const attendAlert = useCallback((id) => {
-    setAlerts((as) =>
-      as.map((a) =>
-        a.id === id
-          ? { ...a, atendida: { fecha: '06/06/2026 a las 14:45', por: 'María Flores' } }
-          : a,
-      ),
-    )
+    // id puede ser 'alert-ins_id' o 'alert-Nombre'
+    const key = id.replace('alert-', '')
+    setAttendedAlerts((prev) => ({
+      ...prev,
+      [key]: { fecha: new Date().toLocaleString('es-PE'), por: 'Supervisor' },
+    }))
   }, [])
 
   // ---- Usuarios ----
@@ -87,6 +148,11 @@ export function AppProvider({ children }) {
   // Agregar usuario nuevo (genera un id random, el backend haría esto)
   const addUser = useCallback((u) => {
     setUsers((us) => [...us, { ...u, id: Math.random().toString(36).slice(2) }])
+  }, [])
+
+  // Actualiza datos de un usuario existente (nombre, rol, contraseña)
+  const updateUser = useCallback((id, data) => {
+    setUsers((us) => us.map((u) => (u.id === id ? { ...u, ...data } : u)))
   }, [])
 
   // ---- Tareas (asignación) ----
@@ -111,14 +177,20 @@ export function AppProvider({ children }) {
     [users],
   )
 
-  // ---- Insumos ----
-  const addInsumo = useCallback((insumo) => {
-    setInsumos((ins) => [...ins, insumo])
+  // ---- Inventario / Lotes ----
+  // Agrega un nuevo lote al inventario (lo usa el operario al registrar ingreso)
+  const addLot = useCallback((lot) => {
+    setInventory((inv) => [...inv, lot])
   }, [])
 
-  const updateInsumo = useCallback((oldNombre, data) => {
+  // ---- Insumos ----
+  const addInsumo = useCallback((insumo) => {
+    setInsumos((ins) => [...ins, { ...insumo, id: Math.random().toString(36).slice(2) }])
+  }, [])
+
+  const updateInsumo = useCallback((id, data) => {
     setInsumos((ins) =>
-      ins.map((i) => (i.nombre === oldNombre ? { ...i, ...data } : i)),
+      ins.map((i) => (i.id === id ? { ...i, ...data } : i)),
     )
   }, [])
 
@@ -156,6 +228,9 @@ export function AppProvider({ children }) {
     assignTask,
     addInsumo,
     updateInsumo,
+    addLot,
+    addRequirement,
+    updateUser,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

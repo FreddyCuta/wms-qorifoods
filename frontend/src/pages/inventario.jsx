@@ -1,27 +1,26 @@
 import { useMemo, useState } from 'react'
 import { Search, Box, ChevronDown } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
-import { INVENTORY, UBICACIONES, INSUMOS } from '../lib/data.js'
 import { AppShell } from '../components/app-shell.jsx'
 import { ActionButton } from '../components/ui/action-button.jsx'
 import { Badge } from '../components/ui/status-badge.jsx'
 import { SelectInput } from '../components/ui/form-field.jsx'
-import { qty } from '../lib/utils.js'
+import { qty, daysUntil } from '../lib/utils.js'
+
+const PASILLOS = ['A', 'B', 'C', 'D']
+const RACKS = [1, 2, 3, 4, 5, 6]
+const NIVELES = [1, 2, 3, 4, 5]
 
 const TODAY = new Date(2026, 5, 6)
 
-function parseDate(d) {
-  const [day, month, year] = d.split('/').map(Number)
-  return new Date(year, month - 1, day)
+function parseUbicacion(u) {
+  const m = u?.match(/Pasillo (\w+)\s*–\s*Rack (\d+)\s*–\s*Nivel (\d+)/)
+  if (!m) return null
+  return { pasillo: m[1], rack: m[2], nivel: m[3] }
 }
 
-function daysUntil(d) {
-  return Math.round((parseDate(d).getTime() - TODAY.getTime()) / 86400000)
-}
-
-// Color según proximidad de vencimiento: rojo si vence en 7 días, amarillo si en 30, normal si falta más
 function vencColor(d) {
-  const days = daysUntil(d)
+  const days = daysUntil(d, TODAY)
   if (days <= 7) return 'text-critical'
   if (days <= 30) return 'text-warning'
   return 'text-foreground'
@@ -30,30 +29,33 @@ function vencColor(d) {
 function groupByInsumo(lots) {
   const grouped = new Map()
   lots.forEach((lot) => {
-    if (!grouped.has(lot.insumo)) grouped.set(lot.insumo, [])
-    grouped.get(lot.insumo).push(lot)
+    const key = lot.insumoId || lot.insumo
+    if (!grouped.has(key)) grouped.set(key, [])
+    grouped.get(key).push(lot)
   })
   return Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))
 }
 
-// Página de consulta de inventario — accesible por todos los roles (sin allowedRoles)
-// Muestra los insumos agrupados con su stock total, punto de reorden y estado
 export default function InventarioPage() {
+  const { inventory, insumos } = useApp()
   const [query, setQuery] = useState('')
-  const [ubicacion, setUbicacion] = useState('')
+  const [filtroPasillo, setFiltroPasillo] = useState('')
+  const [filtroRack, setFiltroRack] = useState('')
+  const [filtroNivel, setFiltroNivel] = useState('')
   const [estado, setEstado] = useState('')
-  const [applied, setApplied] = useState({ query: '', ubicacion: '', estado: '' })
+  const [applied, setApplied] = useState({ query: '', pasillo: '', rack: '', nivel: '', estado: '' })
   const [selectedInsumo, setSelectedInsumo] = useState(null)
   const [emptyDb, setEmptyDb] = useState(false)
 
-  const data = emptyDb ? [] : INVENTORY
+  const data = emptyDb ? [] : inventory
 
-  // Agrupa los lotes por insumo y calcula stock total, estado (Normal / Stock bajo / Agotado) y punto de reorden
   const insumosData = useMemo(() => {
     const grouped = groupByInsumo(data)
-    return grouped.map(([insumo, lots]) => {
+    return grouped.map(([key, lots]) => {
+      const ins = insumos.find((i) => i.id === key || i.nombre === key)
+      const insumo = ins?.nombre || key
       const totalQty = lots.reduce((sum, l) => sum + l.cantidad, 0)
-      const reorderPoint = INSUMOS.find((i) => i.nombre === insumo)?.puntoReorden || 0
+      const reorderPoint = ins?.puntoReorden || 0
       const unidad = lots[0]?.unidad || 'kg'
 
       let statusColor = 'green'
@@ -63,9 +65,8 @@ export default function InventarioPage() {
 
       return { insumo, lots, totalQty, unidad, reorderPoint, statusColor, statusText }
     })
-  }, [data])
+  }, [data, insumos])
 
-  // Filtros aplicados por insumo, ubicación y estado del stock
   const filtered = useMemo(() => {
     return insumosData.filter((item) => {
       const q = applied.query.toLowerCase()
@@ -75,31 +76,41 @@ export default function InventarioPage() {
         (applied.estado === 'disponible' && item.statusText === 'Normal') ||
         (applied.estado === 'bajo' && item.statusText === 'Stock bajo') ||
         (applied.estado === 'agotado' && item.statusText === 'Agotado')
-      const matchUbic = !applied.ubicacion || item.lots.some((l) => l.ubicacion === applied.ubicacion)
+      const matchUbic =
+        (!applied.pasillo || item.lots.some((l) => parseUbicacion(l.ubicacion)?.pasillo === applied.pasillo)) &&
+        (!applied.rack || item.lots.some((l) => parseUbicacion(l.ubicacion)?.rack === applied.rack)) &&
+        (!applied.nivel || item.lots.some((l) => parseUbicacion(l.ubicacion)?.nivel === applied.nivel))
       return matchQuery && matchEstado && matchUbic
     })
   }, [insumosData, applied])
 
   function clearFilters() {
-    setQuery(''); setUbicacion(''); setEstado('')
-    setApplied({ query: '', ubicacion: '', estado: '' })
+    setQuery(''); setFiltroPasillo(''); setFiltroRack(''); setFiltroNivel(''); setEstado('')
+    setApplied({ query: '', pasillo: '', rack: '', nivel: '', estado: '' })
   }
 
-  const hasActiveFilters = applied.query || applied.ubicacion || applied.estado
+  const hasActiveFilters = applied.query || applied.pasillo || applied.rack || applied.nivel || applied.estado
 
   return (
     <AppShell title="Consulta de Inventario">
-      {/* Panel de filtros — insumo, ubicación, estado y botón para aplicar/buscar */}
       <div className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4">
         <SelectInput value={query} onChange={(e) => setQuery(e.target.value)} className="w-56">
           <option value="">Filtrar por insumo</option>
-          {Array.from(new Set(data.map((lot) => lot.insumo))).sort().map((insumo) => (
-            <option key={insumo} value={insumo}>{insumo}</option>
+          {insumos.map((i) => (
+            <option key={i.id} value={i.nombre}>{i.nombre}</option>
           ))}
         </SelectInput>
-        <SelectInput value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} className="w-48">
-          <option value="">Filtrar por ubicación</option>
-          {UBICACIONES.map((u) => <option key={u} value={u}>{u}</option>)}
+        <SelectInput value={filtroPasillo} onChange={(e) => setFiltroPasillo(e.target.value)} className="w-32">
+          <option value="">Pasillo</option>
+          {PASILLOS.map((p) => <option key={p} value={p}>Pasillo {p}</option>)}
+        </SelectInput>
+        <SelectInput value={filtroRack} onChange={(e) => setFiltroRack(e.target.value)} className="w-28">
+          <option value="">Rack</option>
+          {RACKS.map((r) => <option key={r} value={String(r)}>Rack {r}</option>)}
+        </SelectInput>
+        <SelectInput value={filtroNivel} onChange={(e) => setFiltroNivel(e.target.value)} className="w-28">
+          <option value="">Nivel</option>
+          {NIVELES.map((n) => <option key={n} value={String(n)}>Nivel {n}</option>)}
         </SelectInput>
         <SelectInput value={estado} onChange={(e) => setEstado(e.target.value)} className="w-44">
           <option value="">Estado del stock: Todos</option>
@@ -107,7 +118,7 @@ export default function InventarioPage() {
           <option value="bajo">Stock bajo</option>
           <option value="agotado">Agotado</option>
         </SelectInput>
-        <ActionButton onClick={() => setApplied({ query, ubicacion, estado })}>Buscar</ActionButton>
+        <ActionButton onClick={() => setApplied({ query, pasillo: filtroPasillo, rack: filtroRack, nivel: filtroNivel, estado })}>Buscar</ActionButton>
         <button type="button" onClick={clearFilters} className="px-2 text-sm text-muted-foreground hover:text-foreground">
           Limpiar filtros
         </button>
@@ -178,22 +189,19 @@ export default function InventarioPage() {
 
       <LotesDrawer
         insumo={selectedInsumo}
-        lots={data.filter((l) => l.insumo === selectedInsumo)}
+        lots={data.filter((l) => (l.insumoId || l.insumo) === selectedInsumo || l.insumo === selectedInsumo)}
         onClose={() => setSelectedInsumo(null)}
       />
     </AppShell>
   )
 }
 
-// Drawer lateral que se abre al hacer clic en "Ver lotes" — muestra el detalle de cada lote del insumo seleccionado
 function LotesDrawer({ insumo, lots, onClose }) {
   if (!insumo) return null
 
   return (
     <>
-      {/* Overlay oscuro al fondo */}
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} aria-hidden="true" />
-      {/* Panel lateral derecho con la tabla de lotes */}
       <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl flex flex-col overflow-hidden rounded-l-lg border-l border-border bg-card shadow-lg">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="font-semibold text-foreground">Lotes de {insumo}</h2>

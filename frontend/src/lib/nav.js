@@ -31,6 +31,6 @@ const ITEMS = {
 //   • operario   → táctico (ingreso de lotes, requerimientos, inventario)
 export const NAV_BY_ROLE = {
   jefe: [ITEMS.inicio, ITEMS.dashboard, ITEMS.insumosRegistro, ITEMS.inventario, ITEMS.almacen3d, ITEMS.usuarios, ITEMS.responsabilidades],
-  supervisor: [ITEMS.inicio, ITEMS.dashboard, ITEMS.requerimientos, ITEMS.inventario, ITEMS.almacen3d, ITEMS.alertas],
+  supervisor: [ITEMS.inicio, ITEMS.requerimientos, ITEMS.inventario, ITEMS.almacen3d, ITEMS.alertas],
   operario: [ITEMS.inicio, ITEMS.ingreso, ITEMS.requerimientos, ITEMS.inventario, ITEMS.almacen3d],
 }
