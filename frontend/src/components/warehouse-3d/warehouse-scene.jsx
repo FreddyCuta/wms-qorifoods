@@ -113,7 +113,7 @@ function GridCursor({ onSelect, onCursorChange }) {
 
   useEffect(() => {
     onCursorChange?.({ pasillo, rack, nivel })
-  }, [pi, ri, ni])
+  }, [pi, ri, ni, pasillo, rack, nivel, onCursorChange])
 
   useEffect(() => {
     const handler = (e) => {

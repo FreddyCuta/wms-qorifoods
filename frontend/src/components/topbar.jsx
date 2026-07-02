@@ -31,7 +31,7 @@ export function Topbar({ title }) {
             )}
           </button>
         )}
-        <span className="text-sm font-medium text-foreground">{currentUser.name}</span>
+        <span className="text-sm font-medium text-foreground">{currentUser.nombre}</span>
       </div>
     </header>
   )

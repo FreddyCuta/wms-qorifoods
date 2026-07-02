@@ -1,121 +1,133 @@
-import { useMemo, useState, useCallback } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { X } from 'lucide-react'
-import { useApp } from '../lib/store.jsx'
-import { AppShell } from '../components/app-shell.jsx'
-import { ActionButton } from '../components/ui/action-button.jsx'
-import { Field, SelectInput, TextInput } from '../components/ui/form-field.jsx'
-import { cn } from '../lib/utils.js'
-import { WarehouseScene } from '../components/warehouse-3d/warehouse-scene.jsx'
+import { useMemo, useState, useCallback } from "react";
+import { Canvas } from "@react-three/fiber";
+import { X } from "lucide-react";
+import { useApp } from "../lib/store.jsx";
+import { AppShell } from "../components/app-shell.jsx";
+import { ActionButton } from "../components/ui/action-button.jsx";
+import { Field, SelectInput, TextInput } from "../components/ui/form-field.jsx";
+import { cn } from "../lib/utils.js";
+import { WarehouseScene } from "../components/warehouse-3d/warehouse-scene.jsx";
 
-const PASILLOS = ['A', 'B', 'C', 'D']
-const RACKS = [1, 2, 3, 4, 5, 6]
-const NIVELES = [1, 2, 3, 4, 5]
+const PASILLOS = ["A", "B", "C", "D"];
+const RACKS = [1, 2, 3, 4, 5, 6];
+const NIVELES = [1, 2, 3, 4, 5];
 
 export default function IngresoPage() {
-  const { addToast, addLot, currentUser, insumos, inventory } = useApp()
-  const [insumo, setInsumo] = useState('')
-  const [cantidad, setCantidad] = useState('')
-  const [vencimiento, setVencimiento] = useState('')
-  const [pasillo, setPasillo] = useState('')
-  const [rack, setRack] = useState('')
-  const [nivel, setNivel] = useState('')
-  const [errors, setErrors] = useState({})
-  const [show3DPicker, setShow3DPicker] = useState(false)
+  const { addToast, addLot, currentUser, insumos, inventory, ubicaciones } = useApp();
+  const [insumo, setInsumo] = useState("");
+  const [cantidad, setCantidad] = useState("");
+  const [vencimiento, setVencimiento] = useState("");
+  const [pasillo, setPasillo] = useState("");
+  const [rack, setRack] = useState("");
+  const [nivel, setNivel] = useState("");
+  const [errors, setErrors] = useState({});
+  const [show3DPicker, setShow3DPicker] = useState(false);
 
-  const handleSelectLocation3D = useCallback(({ pasillo: p, rack: r, nivel: n }) => {
-    setPasillo(p)
-    setRack(String(r))
-    setNivel(String(n))
-    setShow3DPicker(false)
-  }, [])
+  const handleSelectLocation3D = useCallback(
+    ({ pasillo: p, rack: r, nivel: n }) => {
+      setPasillo(p);
+      setRack(String(r));
+      setNivel(String(n));
+      setShow3DPicker(false);
+    },
+    [],
+  );
 
   const ahora = useMemo(() => {
-    const d = new Date()
-    const dia = String(d.getDate()).padStart(2, '0')
-    const mes = String(d.getMonth() + 1).padStart(2, '0')
-    const anio = d.getFullYear()
-    const hora = String(d.getHours()).padStart(2, '0')
-    const min = String(d.getMinutes()).padStart(2, '0')
-    return `${dia}/${mes}/${anio} ${hora}:${min}`
-  }, [])
-
-  const fechaInput = ahora.split(' ')[0].split('/').reverse().join('-')
+    const d = new Date();
+    const dia = String(d.getDate()).padStart(2, "0");
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const anio = d.getFullYear();
+    const hora = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${dia}/${mes}/${anio} ${hora}:${min}`;
+  }, []);
 
   const nextLotNumber = useMemo(() => {
     const maxNum = inventory.reduce((max, lot) => {
-      const match = lot.codigoLote.match(/\d+$/)
-      return match ? Math.max(max, parseInt(match[0], 10)) : max
-    }, 0)
-    return `LOT-2026-${String(maxNum + 1).padStart(4, '0')}`
-  }, [inventory])
+      const match = lot.codigoLote.match(/\d+$/);
+      return match ? Math.max(max, parseInt(match[0], 10)) : max;
+    }, 0);
+    return `LOT-2026-${String(maxNum + 1).padStart(4, "0")}`;
+  }, [inventory]);
 
-  const insumoObj = insumos.find((i) => i.id === insumo)
-  const proveedor = insumoObj?.proveedor ?? ''
-  const unidad = insumoObj?.unidad ?? 'kg'
+  const insumoObj = insumos.find((i) => i.id === insumo);
+  const proveedor = insumoObj?.proveedor ?? "";
+  const unidad = insumoObj?.unidad ?? "kg";
 
-  const ubicacion = pasillo && rack && nivel
-    ? `Pasillo ${pasillo} – Rack ${rack} – Nivel ${nivel}`
-    : ''
+  const ubicacion =
+    pasillo && rack && nivel
+      ? `Pasillo ${pasillo} – Rack ${rack} – Nivel ${nivel}`
+      : "";
 
   const lotesEnNivel = ubicacion
     ? inventory.filter((lot) => lot.ubicacion === ubicacion).length
-    : 0
+    : 0;
 
-  const nivelLleno = lotesEnNivel >= 5
+  const nivelLleno = lotesEnNivel >= 5;
 
   function reset() {
-    setInsumo('')
-    setCantidad('')
-    setVencimiento('')
-    setPasillo('')
-    setRack('')
-    setNivel('')
-    setErrors({})
+    setInsumo("");
+    setCantidad("");
+    setVencimiento("");
+    setPasillo("");
+    setRack("");
+    setNivel("");
+    setErrors({});
   }
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    const next = {}
-    if (!insumo) next.insumo = 'Este campo es obligatorio.'
-    if (!cantidad || Number(cantidad) <= 0) next.cantidad = 'La cantidad debe ser mayor a cero.'
-    if (!vencimiento) next.vencimiento = 'La fecha de vencimiento debe ser posterior a la fecha actual.'
-    if (!ubicacion) next.ubicacion = 'Seleccione una ubicación.'
-    else if (nivelLleno) next.ubicacion = `Este nivel ya tiene ${lotesEnNivel} lotes (máximo 5).`
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const next = {};
+    if (!insumo) next.insumo = "Este campo es obligatorio.";
+    if (!cantidad || Number(cantidad) <= 0)
+      next.cantidad = "La cantidad debe ser mayor a cero.";
+    if (!vencimiento)
+      next.vencimiento =
+        "La fecha de vencimiento debe ser posterior a la fecha actual.";
+    if (!ubicacion) next.ubicacion = "Seleccione una ubicación.";
+    else if (nivelLleno)
+      next.ubicacion = `Este nivel ya tiene ${lotesEnNivel} lotes (máximo 5).`;
 
     if (Object.keys(next).length > 0) {
-      setErrors(next)
-      return
+      setErrors(next);
+      return;
     }
 
-    addLot({
-      id: Math.random().toString(36).slice(2),
-      insumo: insumoObj.nombre,
-      insumoId: insumo,
-      codigoLote: nextLotNumber,
-      cantidad: Number(cantidad),
-      unidad,
-      cantidadInicial: Number(cantidad),
-      vencimiento: vencimiento.split('-').reverse().join('/'),
-      ubicacion,
-      proveedor,
-      estado: Number(cantidad) > 0 ? 'disponible' : 'agotado',
-      fechaIngreso: ahora,
-      registradoPor: currentUser?.name ?? 'Operario',
-    })
+    const ubicacionMatch = ubicaciones.find(
+      (u) => u.pasillo === pasillo && String(u.rack) === String(rack) && String(u.nivel) === String(nivel),
+    );
+    if (!ubicacionMatch) {
+      setErrors({ ubicacion: "Ubicación no encontrada en la base de datos." });
+      return;
+    }
 
-    reset()
-    addToast('Lote registrado correctamente.')
+    try {
+      await addLot({
+        insumoId: insumo,
+        cantidad: Number(cantidad),
+        vencimiento,
+        ubicacionId: ubicacionMatch.id,
+        proveedor,
+        registradoPorId: currentUser.id,
+      });
+      reset();
+      addToast("Lote registrado correctamente.");
+    } catch {
+      addToast("Error al registrar el lote", "error");
+    }
   }
 
   return (
-    <AppShell title="Registrar Ingreso de Lote" allowedRoles={['operario']}>
+    <AppShell title="Registrar Ingreso de Lote" allowedRoles={["operario"]}>
       <form
         onSubmit={handleSubmit}
         noValidate
         className="mx-auto max-w-[720px] rounded-lg border border-border bg-card p-6"
       >
-        <h2 className="mb-5 text-base font-bold text-foreground">Datos del lote</h2>
+        <h2 className="mb-5 text-base font-bold text-foreground">
+          Datos del lote
+        </h2>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <Field label="Insumo" error={errors.insumo}>
@@ -184,7 +196,9 @@ export default function IngresoPage() {
                 >
                   <option value="">Pasillo</option>
                   {PASILLOS.map((p) => (
-                    <option key={p} value={p}>Pasillo {p}</option>
+                    <option key={p} value={p}>
+                      Pasillo {p}
+                    </option>
                   ))}
                 </SelectInput>
                 <SelectInput
@@ -194,7 +208,9 @@ export default function IngresoPage() {
                 >
                   <option value="">Rack</option>
                   {RACKS.map((r) => (
-                    <option key={r} value={r}>Rack {r}</option>
+                    <option key={r} value={r}>
+                      Rack {r}
+                    </option>
                   ))}
                 </SelectInput>
                 <SelectInput
@@ -204,7 +220,9 @@ export default function IngresoPage() {
                 >
                   <option value="">Nivel</option>
                   {NIVELES.map((n) => (
-                    <option key={n} value={n}>Nivel {n}</option>
+                    <option key={n} value={n}>
+                      Nivel {n}
+                    </option>
                   ))}
                 </SelectInput>
               </div>
@@ -217,12 +235,16 @@ export default function IngresoPage() {
                 Seleccionar en 3D
               </ActionButton>
               {ubicacion && (
-                <div className={cn(
-                  'mt-1.5 text-right text-xs',
-                  nivelLleno ? 'text-critical font-medium' : 'text-muted-foreground',
-                )}>
+                <div
+                  className={cn(
+                    "mt-1.5 text-right text-xs",
+                    nivelLleno
+                      ? "text-critical font-medium"
+                      : "text-muted-foreground",
+                  )}
+                >
                   {lotesEnNivel}/5 lotes en este nivel
-                  {nivelLleno && ' — lleno'}
+                  {nivelLleno && " — lleno"}
                 </div>
               )}
             </Field>
@@ -258,7 +280,7 @@ export default function IngresoPage() {
           )}
 
           <Field label="Registrado por">
-            <TextInput readOnly value={currentUser?.name ?? 'Operario'} />
+            <TextInput readOnly value={currentUser?.nombre ?? "Operario"} />
           </Field>
         </div>
 
@@ -270,5 +292,5 @@ export default function IngresoPage() {
         </div>
       </form>
     </AppShell>
-  )
+  );
 }

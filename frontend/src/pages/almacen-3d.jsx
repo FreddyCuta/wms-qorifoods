@@ -1,16 +1,24 @@
-import { useState, useCallback } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { X, Package, MapPin, Calendar, User, AlertTriangle, RotateCcw } from 'lucide-react'
-import { useApp } from '../lib/store.jsx'
-import { AppShell } from '../components/app-shell.jsx'
-import { WarehouseScene } from '../components/warehouse-3d/warehouse-scene.jsx'
-import { cn, qty } from '../lib/utils.js'
+import { useState, useCallback } from "react";
+import { Canvas } from "@react-three/fiber";
+import {
+  X,
+  Package,
+  MapPin,
+  Calendar,
+  User,
+  AlertTriangle,
+  RotateCcw,
+} from "lucide-react";
+import { useApp } from "../lib/store.jsx";
+import { AppShell } from "../components/app-shell.jsx";
+import { WarehouseScene } from "../components/warehouse-3d/warehouse-scene.jsx";
+import { cn, qty } from "../lib/utils.js";
 
 const STATUS_STYLE = {
-  disponible: 'bg-success/10 text-success border-success/20',
-  bajo: 'bg-warning/10 text-warning border-warning/20',
-  agotado: 'bg-critical/10 text-critical border-critical/20',
-}
+  disponible: "bg-success/10 text-success border-success/20",
+  bajo: "bg-warning/10 text-warning border-warning/20",
+  agotado: "bg-critical/10 text-critical border-critical/20",
+};
 
 function InfoPanel({ item, onClose }) {
   return (
@@ -28,23 +36,34 @@ function InfoPanel({ item, onClose }) {
 
       <div className="space-y-3 p-4">
         <div>
-          <div className="text-base font-bold text-foreground">{item.insumo}</div>
+          <div className="text-base font-bold text-foreground">
+            {item.insumo}
+          </div>
           <div className="text-xs text-muted-foreground">{item.codigoLote}</div>
         </div>
 
-        <div className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-          STATUS_STYLE[item.estado] || '',
-        )}>
+        <div
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium",
+            STATUS_STYLE[item.estado] || "",
+          )}
+        >
           <AlertTriangle className="size-3" />
-          {item.estado === 'disponible' ? 'Disponible' : item.estado === 'bajo' ? 'Stock bajo' : 'Agotado'}
+          {item.estado === "disponible"
+            ? "Disponible"
+            : item.estado === "bajo"
+              ? "Stock bajo"
+              : "Agotado"}
         </div>
 
         <div className="space-y-2">
           <DetailRow icon={<Package className="size-3.5" />} label="Cantidad">
-            <span className="font-semibold">{qty(item.cantidad, item.unidad)}</span>
+            <span className="font-semibold">
+              {qty(item.cantidad, item.unidad)}
+            </span>
             <span className="text-xs text-muted-foreground">
-              {' '}/ {qty(item.cantidadInicial, item.unidad)}
+              {" "}
+              / {qty(item.cantidadInicial, item.unidad)}
             </span>
           </DetailRow>
 
@@ -52,33 +71,39 @@ function InfoPanel({ item, onClose }) {
             {item.ubicacion}
           </DetailRow>
 
-          <DetailRow icon={<Calendar className="size-3.5" />} label="Vencimiento">
+          <DetailRow
+            icon={<Calendar className="size-3.5" />}
+            label="Vencimiento"
+          >
             {item.vencimiento}
           </DetailRow>
 
-          <DetailRow icon={<User className="size-3.5" />} label="Registrado por">
+          <DetailRow
+            icon={<User className="size-3.5" />}
+            label="Registrado por"
+          >
             {item.registradoPor}
           </DetailRow>
 
-          <DetailRow label="Proveedor">
-            {item.proveedor}
-          </DetailRow>
+          <DetailRow label="Proveedor">{item.proveedor}</DetailRow>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function DetailRow({ icon, label, children }) {
   return (
     <div className="flex items-start gap-2 text-xs">
-      {icon && <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>}
+      {icon && (
+        <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>
+      )}
       <div className="min-w-0 flex-1">
         <span className="text-muted-foreground">{label}: </span>
         <span className="text-foreground">{children}</span>
       </div>
     </div>
-  )
+  );
 }
 
 function Toolbar({ onResetCamera }) {
@@ -97,26 +122,32 @@ function Toolbar({ onResetCamera }) {
         Arrastra para rotar · Scroll para zoom
       </span>
     </div>
-  )
+  );
 }
 
 export default function Almacen3dPage() {
-  const [selectedItem, setSelectedItem] = useState(null)
-  const [resetKey, setResetKey] = useState(0)
-  const { activeAlertCount, pendingReqCount } = useApp()
-  const [cursorInfo, setCursorInfo] = useState({ pasillo: 'B', rack: 3, nivel: 3, ocupados: 0, libres: 5 })
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [resetKey, setResetKey] = useState(0);
+  const { activeAlertCount, pendingReqCount } = useApp();
+  const [cursorInfo, setCursorInfo] = useState({
+    pasillo: "B",
+    rack: 3,
+    nivel: 3,
+    ocupados: 0,
+    libres: 5,
+  });
 
   const handleSelectBox = useCallback((item) => {
-    setSelectedItem((prev) => (prev?.id === item.id ? null : item))
-  }, [])
+    setSelectedItem((prev) => (prev?.id === item.id ? null : item));
+  }, []);
 
   const handleCursorChange = useCallback((info) => {
-    setCursorInfo(info)
-  }, [])
+    setCursorInfo(info);
+  }, []);
 
   const handleResetCamera = useCallback(() => {
-    setResetKey((k) => k + 1)
-  }, [])
+    setResetKey((k) => k + 1);
+  }, []);
 
   return (
     <AppShell title="Visualización 3D del Almacén">
@@ -136,7 +167,10 @@ export default function Almacen3dPage() {
         </Canvas>
 
         {selectedItem && (
-          <InfoPanel item={selectedItem} onClose={() => setSelectedItem(null)} />
+          <InfoPanel
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
+          />
         )}
 
         <Toolbar onResetCamera={handleResetCamera} />
@@ -144,29 +178,47 @@ export default function Almacen3dPage() {
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center p-2">
           <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-1.5 text-xs shadow-lg backdrop-blur-sm">
             <span className="font-medium text-foreground">
-              {cursorInfo.pasillo} <span className="text-muted-foreground">/</span> Rack {cursorInfo.rack} <span className="text-muted-foreground">/</span> Nivel {cursorInfo.nivel}
+              {cursorInfo.pasillo}{" "}
+              <span className="text-muted-foreground">/</span> Rack{" "}
+              {cursorInfo.rack} <span className="text-muted-foreground">/</span>{" "}
+              Nivel {cursorInfo.nivel}
             </span>
             <span className="text-muted-foreground">·</span>
-            <span className={cursorInfo.libres === 0 ? 'text-critical font-medium' : 'text-muted-foreground'}>
-              {cursorInfo.ocupados}/5 ocupados · {cursorInfo.libres} libre{cursorInfo.libres !== 1 ? 's' : ''}
+            <span
+              className={
+                cursorInfo.libres === 0
+                  ? "text-critical font-medium"
+                  : "text-muted-foreground"
+              }
+            >
+              {cursorInfo.ocupados}/5 ocupados · {cursorInfo.libres} libre
+              {cursorInfo.libres !== 1 ? "s" : ""}
             </span>
           </div>
         </div>
 
         <div className="absolute left-4 top-4 flex gap-3">
-          <MiniStat value={activeAlertCount} label="Alertas" color="text-warning" />
-          <MiniStat value={pendingReqCount} label="Req. pendientes" color="text-info" />
+          <MiniStat
+            value={activeAlertCount}
+            label="Alertas"
+            color="text-warning"
+          />
+          <MiniStat
+            value={pendingReqCount}
+            label="Req. pendientes"
+            color="text-info"
+          />
         </div>
       </div>
     </AppShell>
-  )
+  );
 }
 
 function MiniStat({ value, label, color }) {
   return (
     <div className="rounded-lg border border-border bg-card/80 px-3 py-1.5 shadow backdrop-blur-sm">
-      <div className={cn('text-lg font-bold leading-none', color)}>{value}</div>
+      <div className={cn("text-lg font-bold leading-none", color)}>{value}</div>
       <div className="text-[10px] text-muted-foreground">{label}</div>
     </div>
-  )
+  );
 }

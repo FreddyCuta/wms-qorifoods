@@ -8,27 +8,34 @@ import { Field, SelectInput, TextInput } from "../components/ui/form-field.jsx";
 import { qty } from "../lib/utils.js";
 
 function newRow() {
-  return { id: Math.random().toString(36).slice(2), insumo: "", insumoId: "", cantidad: "" };
+  return {
+    id: Math.random().toString(36).slice(2),
+    insumo: "",
+    insumoId: "",
+    cantidad: "",
+  };
 }
 
 function calcStock(inventory) {
   const map = {};
   inventory.forEach((lot) => {
-    const key = lot.insumoId || lot.insumo
+    const key = lot.insumoId || lot.insumo;
     map[key] = (map[key] || 0) + lot.cantidad;
   });
   return map;
 }
 
 export default function NuevoRequerimientoPage() {
-  const { addToast, addRequirement, currentUser, insumos, inventory } =
+  const { addToast, addRequirement, currentUser, insumos, inventory, requirements } =
     useApp();
   const navigate = useNavigate();
   const [numero, setNumero] = useState("");
   const [fecha, setFecha] = useState("");
+  const primerInsumo = insumos[0];
+  const segundoInsumo = insumos[1];
   const [rows, setRows] = useState([
-    { id: "r1", insumo: "Sémola de trigo", insumoId: "ins_1", cantidad: "500" },
-    { id: "r2", insumo: "Harina de trigo", insumoId: "ins_2", cantidad: "300" },
+    { id: "r1", insumo: primerInsumo?.nombre || "", insumoId: primerInsumo?.id || "", cantidad: "500" },
+    { id: "r2", insumo: segundoInsumo?.nombre || "", insumoId: segundoInsumo?.id || "", cantidad: "300" },
   ]);
   const [submitted, setSubmitted] = useState(false);
 
@@ -40,7 +47,7 @@ export default function NuevoRequerimientoPage() {
     insumoNameMap[i.id] = i.nombre;
   });
 
-  const duplicateNumero = numero.trim() === "REQ-047";
+  const duplicateNumero = requirements.some((r) => r.numero === numero.trim());
   const noItems = rows.length === 0;
   const numeroError = submitted
     ? duplicateNumero
@@ -54,7 +61,7 @@ export default function NuevoRequerimientoPage() {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setSubmitted(true);
     const hasQtyError = rows.some(
@@ -62,25 +69,29 @@ export default function NuevoRequerimientoPage() {
     );
     if (!numero.trim() || duplicateNumero || noItems || hasQtyError) return;
 
-    addRequirement({
-      id: Math.random().toString(36).slice(2),
-      numero: numero.trim(),
-      fechaSolicitud: fecha || new Date().toLocaleDateString("es-PE"),
-      fechaRegistro: new Date().toLocaleString("es-PE"),
-      registradoPor: currentUser?.name || "Supervisor",
-      estado: "pendiente",
-      atenciones: [],
-      insumos: rows.map((r) => ({
-        insumo: r.insumo,
-        insumoId: r.insumoId,
-        cantidad: Number(r.cantidad),
-        unidad: insumoUnitMap[r.insumoId] || 'kg',
-        stock: stockPorInsumo[r.insumoId || r.insumo] || 0,
-        atendido: 0,
-      })),
-    });
-    addToast("Requerimiento registrado correctamente.");
-    navigate("/requerimientos");
+    const hoy = new Date();
+    const fechaSolicitud = fecha
+      ? fecha.split("/").reverse().join("-")
+      : `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+
+    try {
+      await addRequirement({
+        numero: numero.trim(),
+        fechaSolicitud,
+        registrado_por_id: currentUser.id,
+        insumos: rows.map((r) => ({
+          insumo: r.insumo,
+          insumoId: r.insumoId,
+          cantidad: Number(r.cantidad),
+          unidad: insumoUnitMap[r.insumoId] || "kg",
+          stock: stockPorInsumo[r.insumoId || r.insumo] || 0,
+        })),
+      });
+      addToast("Requerimiento registrado correctamente.");
+      navigate("/requerimientos");
+    } catch {
+      addToast("Error al registrar el requerimiento", "error");
+    }
   }
 
   return (
@@ -133,7 +144,7 @@ export default function NuevoRequerimientoPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((row) => {
-                const key = row.insumoId || row.insumo
+                const key = row.insumoId || row.insumo;
                 const stockVal = key ? (stockPorInsumo[key] ?? null) : null;
                 const qtyError =
                   submitted && (!row.cantidad || Number(row.cantidad) <= 0);
@@ -144,8 +155,11 @@ export default function NuevoRequerimientoPage() {
                       <SelectInput
                         value={row.insumoId}
                         onChange={(e) => {
-                          const id = e.target.value
-                          updateRow(row.id, { insumo: insumoNameMap[id] || '', insumoId: id })
+                          const id = e.target.value;
+                          updateRow(row.id, {
+                            insumo: insumoNameMap[id] || "",
+                            insumoId: id,
+                          });
                         }}
                       >
                         <option value="">Seleccione...</option>

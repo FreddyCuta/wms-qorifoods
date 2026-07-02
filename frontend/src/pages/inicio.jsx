@@ -1,38 +1,40 @@
-import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Boxes } from 'lucide-react'
-import { useApp } from '../lib/store.jsx'
-import { ROLE_LABEL } from '../lib/types.js'
-import { AppShell } from '../components/app-shell.jsx'
-import { TaskRow } from '../components/task-row.jsx'
-import { Badge } from '../components/ui/status-badge.jsx'
+import { useNavigate } from "react-router-dom";
+import { AlertTriangle, Boxes } from "lucide-react";
+import { useApp } from "../lib/store.jsx";
+import { ROLE_LABEL } from "../lib/types.js";
+import { AppShell } from "../components/app-shell.jsx";
+import { TaskRow } from "../components/task-row.jsx";
+import { Badge } from "../components/ui/status-badge.jsx";
 
 export default function InicioPage() {
-  const { currentUser } = useApp()
-  if (!currentUser) return null
+  const { currentUser } = useApp();
+  if (!currentUser) return null;
   return (
     // Home — AppShell sin allowedRoles porque todos entran, el contenido cambia según el rol
     <AppShell title="Inicio">
-      {currentUser.role === 'operario' ? (
+      {currentUser.role === "operario" ? (
         <OperarioDashboard />
-      ) : currentUser.role === 'supervisor' ? (
+      ) : currentUser.role === "supervisor" ? (
         <SupervisorDashboard />
       ) : (
         <JefeDashboard />
       )}
     </AppShell>
-  )
+  );
 }
 
 // Tareas pendientes del usuario logueado — filtramos por assigneeId y status
 function MyPending() {
-  const { currentUser, tasks } = useApp()
-  const mine = tasks.filter((t) => t.assigneeId === currentUser?.id)
-  const pending = mine.filter((t) => t.status === 'pendiente')
+  const { currentUser, tasks } = useApp();
+  const mine = tasks.filter((t) => t.assigneeId === currentUser?.id);
+  const pending = mine.filter((t) => t.status === "pendiente");
 
   return (
     <section>
       <div className="mb-1 flex items-center gap-2">
-        <h2 className="text-base font-semibold text-foreground">Mis Pendientes</h2>
+        <h2 className="text-base font-semibold text-foreground">
+          Mis Pendientes
+        </h2>
         <Badge color="amber">{pending.length}</Badge>
       </div>
       <div className="divide-y divide-border rounded-lg border border-border bg-card px-4">
@@ -54,32 +56,36 @@ function MyPending() {
         )}
       </div>
     </section>
-  )
+  );
 }
 
 // Dashboard del operario — solo ve sus tareas pendientes, nada más
 function OperarioDashboard() {
-  const { currentUser } = useApp()
+  const { currentUser } = useApp();
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-8 flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground">Buenos días, {currentUser?.name}</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Buenos días, {currentUser?.nombre}
+        </h1>
         <Badge color="gray">{ROLE_LABEL[currentUser.role]}</Badge>
       </div>
       <MyPending />
     </div>
-  )
+  );
 }
 
 // Dashboard del supervisor — sus pendientes más KPIs de alertas
 function SupervisorDashboard() {
-  const { currentUser, activeAlertCount } = useApp()
-  const navigate = useNavigate()
+  const { currentUser, activeAlertCount } = useApp();
+  const navigate = useNavigate();
 
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-8 flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground">Buenos días, {currentUser?.name}</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Buenos días, {currentUser?.nombre}
+        </h1>
         <Badge color="amber">{ROLE_LABEL[currentUser.role]}</Badge>
       </div>
 
@@ -93,22 +99,24 @@ function SupervisorDashboard() {
           valueColor="text-critical"
           label="Alertas de reabastecimiento activas"
           link="Ver alertas →"
-          onClick={() => navigate('/alertas')}
+          onClick={() => navigate("/alertas")}
         />
       </div>
     </div>
-  )
+  );
 }
 
 // Dashboard del jefe — visión general del inventario, nada operativo
 function JefeDashboard() {
-  const { currentUser, inventory } = useApp()
-  const lotes = inventory.length
+  const { currentUser, inventory } = useApp();
+  const lotes = inventory.length;
 
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-8 flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground">Buenos días, {currentUser?.name}</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Buenos días, {currentUser?.nombre}
+        </h1>
         <Badge color="navy">{ROLE_LABEL[currentUser.role]}</Badge>
       </div>
 
@@ -121,7 +129,7 @@ function JefeDashboard() {
         />
       </div>
     </div>
-  )
+  );
 }
 
 function KpiWidget({ icon, value, valueColor, label, link, onClick }) {
@@ -131,7 +139,9 @@ function KpiWidget({ icon, value, valueColor, label, link, onClick }) {
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className={`text-2xl font-bold leading-none ${valueColor}`}>{value}</div>
+        <div className={`text-2xl font-bold leading-none ${valueColor}`}>
+          {value}
+        </div>
         <p className="mt-1 text-xs text-muted-foreground">{label}</p>
         {link && (
           <button
@@ -144,5 +154,5 @@ function KpiWidget({ icon, value, valueColor, label, link, onClick }) {
         )}
       </div>
     </div>
-  )
+  );
 }

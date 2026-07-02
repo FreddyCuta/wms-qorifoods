@@ -3,18 +3,7 @@ import { LogOut } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
 import { NAV_BY_ROLE } from '../lib/nav.js'
 import { ROLE_LABEL } from '../lib/types.js'
-import { cn } from '../lib/utils.js'
-
-// Helper para extraer las iniciales del nombre del usuario (hasta 2 palabras)
-export function initials(name) {
-  if (!name) return '?'
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join('')
-    .toUpperCase()
-}
+import { cn, initials } from '../lib/utils.js'
 
 // Menú lateral izquierdo. Muestra el logo, los enlaces de navegación filtrados según el rol del usuario
 // (usando NAV_BY_ROLE, que está definido en lib/nav.js), y un footer con los datos del usuario activo
@@ -65,10 +54,10 @@ export function Sidebar({ onLogout }) {
 
       <div className="m-2 flex items-center gap-3 rounded-md bg-sidebar-accent/50 px-3 py-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-          {initials(currentUser.name)}
+          {initials(currentUser.nombre)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-white">{currentUser.name}</div>
+          <div className="truncate text-sm font-medium text-white">{currentUser.nombre}</div>
           <div className="truncate text-xs text-sidebar-foreground/60">
             {ROLE_LABEL[currentUser.role]}
           </div>
