@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { OrbitControls, Grid, Text, Edges, Html } from '@react-three/drei'
 import { useApp } from '../../lib/store.jsx'
@@ -9,13 +9,13 @@ function parseLocation(loc) {
   return { pasillo: m[1], rack: parseInt(m[2]), nivel: parseInt(m[3]) }
 }
 
-const PASILLO_Z = { A: -8, B: -4, C: 0, D: 4, E: 8 }
+const PASILLO_Z = { A: -6, B: -2, C: 2, D: 6 }
 
 const BAY_X = {}
-for (let i = 1; i <= 10; i++) BAY_X[i] = -18 + (i - 1) * 4
+for (let i = 1; i <= 6; i++) BAY_X[i] = -10 + (i - 1) * 4
 
-const SHELF_Y = [0.04, 0.54, 1.04, 1.54, 2.04, 2.54]
-const NIVEL_Y = { 1: 0.07, 2: 0.57, 3: 1.07, 4: 1.57, 5: 2.07, 6: 2.57 }
+const SHELF_Y = [0.04, 0.54, 1.04, 1.54, 2.04]
+const NIVEL_Y = { 1: 0.07, 2: 0.57, 3: 1.07, 4: 1.57, 5: 2.07 }
 
 const INSUMO_COLOR = {
   'Sémola de trigo': '#c8922a',
@@ -32,12 +32,12 @@ const STATUS_COLOR = {
   agotado: '#c0392b',
 }
 
-const ROW_L = 40
+const ROW_L = 28
 const ROW_D = 2
 const POST_H = 3.0
 const BAY_W = 3.6
 const UPRIGHT_X = []
-for (let x = -20; x <= 20; x += 4) UPRIGHT_X.push(x)
+for (let x = -12; x <= 12; x += 4) UPRIGHT_X.push(x)
 
 function RackRow({ position, rowLetter }) {
   return (
@@ -63,7 +63,7 @@ function RackRow({ position, rowLetter }) {
         </mesh>
       ))}
       <Text
-        position={[-21.5, 3.3, 0]}
+        position={[-15, 3.3, 0]}
         fontSize={0.35}
         color="#c8922a"
         anchorX="left"
@@ -79,39 +79,12 @@ function RackRow({ position, rowLetter }) {
 
 function ControlsWithKeyboard() {
   const controlsRef = useRef()
-  useEffect(() => {
-    const controls = controlsRef.current
-    if (!controls) return
-    const step = 2
-    const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
-    const B = { xMin: -22, xMax: 22, zMin: -10, zMax: 10 }
-    const handler = (e) => {
-      let dx = 0, dz = 0
-      switch (e.key) {
-        case 'ArrowUp': e.preventDefault(); dz = -step; break
-        case 'ArrowDown': e.preventDefault(); dz = step; break
-        case 'ArrowLeft': e.preventDefault(); dx = -step; break
-        case 'ArrowRight': e.preventDefault(); dx = step; break
-        default: return
-      }
-      const c = controls
-      const oldZ = c.target.z
-      const oldX = c.target.x
-      c.target.z = clamp(c.target.z + dz, B.zMin, B.zMax)
-      c.target.x = clamp(c.target.x + dx, B.xMin, B.xMax)
-      c.object.position.z += c.target.z - oldZ
-      c.object.position.x += c.target.x - oldX
-      c.update()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
   return (
     <OrbitControls
       ref={controlsRef}
       makeDefault
-      minDistance={4}
-      maxDistance={80}
+      minDistance={3}
+      maxDistance={50}
       maxPolarAngle={Math.PI / 1.5}
       minPolarAngle={0.05}
       target={[0, 1, 0]}
@@ -122,6 +95,68 @@ function ControlsWithKeyboard() {
       enablePan
       panSpeed={1.5}
     />
+  )
+}
+
+const GRID_PASILLOS = ['A', 'B', 'C', 'D']
+const GRID_RACKS = [1, 2, 3, 4, 5, 6]
+const GRID_NIVELES = [1, 2, 3, 4, 5]
+
+function GridCursor({ onSelect, onCursorChange }) {
+  const [pi, setPi] = useState(1)
+  const [ri, setRi] = useState(2)
+  const [ni, setNi] = useState(2)
+
+  const pasillo = GRID_PASILLOS[pi]
+  const rack = GRID_RACKS[ri]
+  const nivel = GRID_NIVELES[ni]
+
+  useEffect(() => {
+    onCursorChange?.({ pasillo, rack, nivel })
+  }, [pi, ri, ni])
+
+  useEffect(() => {
+    const handler = (e) => {
+      const tag = e.target.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      switch (e.key) {
+        case 'ArrowUp': e.preventDefault(); setPi(p => Math.max(0, p - 1)); break
+        case 'ArrowDown': e.preventDefault(); setPi(p => Math.min(3, p + 1)); break
+        case 'ArrowLeft': e.preventDefault(); setRi(r => Math.max(0, r - 1)); break
+        case 'ArrowRight': e.preventDefault(); setRi(r => Math.min(5, r + 1)); break
+        case 'w': case 'W': e.preventDefault(); setNi(n => Math.min(4, n + 1)); break
+        case 's': case 'S': e.preventDefault(); setNi(n => Math.max(0, n - 1)); break
+        case 'Enter':
+          if (onSelect) {
+            e.preventDefault()
+            onSelect({ pasillo, rack, nivel })
+          }
+          break
+        default: return
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [pi, ri, ni, pasillo, rack, nivel, onSelect])
+
+  const z = PASILLO_Z[pasillo]
+  const x = BAY_X[rack]
+  const y = NIVEL_Y[nivel]
+
+  return (
+    <group>
+      <mesh position={[x, y + 0.005, z]}>
+        <boxGeometry args={[BAY_W - 0.3, 0.01, 1.6]} />
+        <meshBasicMaterial color="#e67e22" transparent opacity={0.35} />
+        <Edges color="#e67e22" />
+      </mesh>
+      {[-0.7, 0.7].map((dz) => (
+        <mesh key={dz} position={[x, y + 0.35, z + dz]}>
+          <boxGeometry args={[0.06, 0.7, 0.06]} />
+          <meshBasicMaterial color="#e67e22" />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
@@ -206,7 +241,7 @@ function EmptySlot({ position, pasillo, rack, nivel, onSelect }) {
 function AisleLine({ z }) {
   return (
     <mesh position={[0, 0.005, z]} receiveShadow>
-      <boxGeometry args={[40, 0.005, 0.06]} />
+      <boxGeometry args={[30, 0.005, 0.06]} />
       <meshStandardMaterial color="#c8a050" transparent opacity={0.25} />
     </mesh>
   )
@@ -215,16 +250,16 @@ function AisleLine({ z }) {
 function WarehouseWalls() {
   return (
     <group>
-      <mesh position={[0, 0.25, -10.55]} receiveShadow>
-        <boxGeometry args={[46, 0.5, 0.15]} />
+      <mesh position={[0, 0.25, -7.55]} receiveShadow>
+        <boxGeometry args={[32, 0.5, 0.15]} />
         <meshStandardMaterial color="#d4d0c8" roughness={0.9} />
       </mesh>
-      <mesh position={[-23.05, 0.25, 0]} receiveShadow>
-        <boxGeometry args={[0.15, 0.5, 21]} />
+      <mesh position={[-16.05, 0.25, 0]} receiveShadow>
+        <boxGeometry args={[0.15, 0.5, 16]} />
         <meshStandardMaterial color="#d4d0c8" roughness={0.9} />
       </mesh>
-      <mesh position={[23.05, 0.25, 0]} receiveShadow>
-        <boxGeometry args={[0.15, 0.5, 21]} />
+      <mesh position={[16.05, 0.25, 0]} receiveShadow>
+        <boxGeometry args={[0.15, 0.5, 16]} />
         <meshStandardMaterial color="#d4d0c8" roughness={0.9} />
       </mesh>
     </group>
@@ -234,8 +269,8 @@ function WarehouseWalls() {
 function LoadingDock() {
   return (
     <group>
-      <mesh position={[0, 0.05, 10]} receiveShadow>
-        <boxGeometry args={[14, 0.1, 2]} />
+      <mesh position={[0, 0.05, 7.5]} receiveShadow>
+        <boxGeometry args={[10, 0.1, 2]} />
         <meshStandardMaterial color="#666" roughness={0.9} />
       </mesh>
       <mesh position={[0, 0.01, 10]} receiveShadow>
@@ -258,8 +293,14 @@ function distributeItems(items, bayCenterX, nivelY, rowZ) {
   return result
 }
 
-export function WarehouseScene({ onSelectBox, selectedItem, onSelectLocation }) {
+export function WarehouseScene({ onSelectBox, selectedItem, onSelectLocation, onCursorChange }) {
   const { inventory } = useApp()
+
+  const handleCursorChange = useCallback(({ pasillo, rack, nivel }) => {
+    const ubicacion = `Pasillo ${pasillo} – Rack ${rack} – Nivel ${nivel}`
+    const count = inventory.filter(i => i.ubicacion === ubicacion).length
+    onCursorChange?.({ pasillo, rack, nivel, ocupados: count, libres: 5 - count })
+  }, [inventory, onCursorChange])
 
   const rows = useMemo(() => {
     const itemsByLoc = {}
@@ -272,10 +313,10 @@ export function WarehouseScene({ onSelectBox, selectedItem, onSelectLocation }) 
     })
 
     const result = []
-    for (const pasillo of ['A', 'B', 'C', 'D', 'E']) {
+    for (const pasillo of ['A', 'B', 'C', 'D']) {
       const bayNiveles = []
-      for (const rack of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
-        for (const nivel of [1, 2, 3, 4, 5, 6]) {
+      for (const rack of [1, 2, 3, 4, 5, 6]) {
+        for (const nivel of [1, 2, 3, 4, 5]) {
           const key = `${pasillo}-${rack}-${nivel}`
           bayNiveles.push({ rack, nivel, key, items: itemsByLoc[key] || [] })
         }
@@ -285,7 +326,7 @@ export function WarehouseScene({ onSelectBox, selectedItem, onSelectLocation }) 
     return result
   }, [inventory])
 
-  const aisleZs = [-6, -2, 2, 6]
+  const aisleZs = [-4, 0, 4]
 
   return (
     <>
@@ -296,11 +337,11 @@ export function WarehouseScene({ onSelectBox, selectedItem, onSelectLocation }) 
         intensity={1}
         castShadow
         shadow-mapSize={[1024, 1024]}
-        shadow-camera-far={60}
-        shadow-camera-left={-30}
-        shadow-camera-right={30}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
+        shadow-camera-far={40}
+        shadow-camera-left={-20}
+        shadow-camera-right={20}
+        shadow-camera-top={20}
+        shadow-camera-bottom={-20}
       />
       <hemisphereLight args={['#f5f0e1', '#d4c8b0', 0.25]} />
 
@@ -308,7 +349,7 @@ export function WarehouseScene({ onSelectBox, selectedItem, onSelectLocation }) 
 
       <Grid
         position={[0, -0.005, 0]}
-        args={[52, 24]}
+        args={[36, 18]}
         cellSize={1}
         cellThickness={0.4}
         cellColor="#c8b8a5"
@@ -374,6 +415,7 @@ export function WarehouseScene({ onSelectBox, selectedItem, onSelectLocation }) 
         )
       })}
 
+      <GridCursor onSelect={onSelectLocation} onCursorChange={handleCursorChange} />
     </>
   )
 }

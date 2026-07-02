@@ -8,9 +8,9 @@ import { Field, SelectInput, TextInput } from '../components/ui/form-field.jsx'
 import { cn } from '../lib/utils.js'
 import { WarehouseScene } from '../components/warehouse-3d/warehouse-scene.jsx'
 
-const PASILLOS = ['A', 'B', 'C', 'D', 'E']
-const RACKS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-const NIVELES = [1, 2, 3, 4, 5, 6]
+const PASILLOS = ['A', 'B', 'C', 'D']
+const RACKS = [1, 2, 3, 4, 5, 6]
+const NIVELES = [1, 2, 3, 4, 5]
 
 export default function IngresoPage() {
   const { addToast, addLot, currentUser, insumos, inventory } = useApp()

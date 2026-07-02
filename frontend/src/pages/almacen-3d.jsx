@@ -104,9 +104,14 @@ export default function Almacen3dPage() {
   const [selectedItem, setSelectedItem] = useState(null)
   const [resetKey, setResetKey] = useState(0)
   const { activeAlertCount, pendingReqCount } = useApp()
+  const [cursorInfo, setCursorInfo] = useState({ pasillo: 'B', rack: 3, nivel: 3, ocupados: 0, libres: 5 })
 
   const handleSelectBox = useCallback((item) => {
     setSelectedItem((prev) => (prev?.id === item.id ? null : item))
+  }, [])
+
+  const handleCursorChange = useCallback((info) => {
+    setCursorInfo(info)
   }, [])
 
   const handleResetCamera = useCallback(() => {
@@ -119,13 +124,14 @@ export default function Almacen3dPage() {
         <Canvas
           key={resetKey}
           shadows
-          camera={{ position: [30, 22, 30], fov: 40 }}
+          camera={{ position: [18, 14, 18], fov: 40 }}
           gl={{ antialias: true }}
           dpr={[1, 1.5]}
         >
           <WarehouseScene
             onSelectBox={handleSelectBox}
             selectedItem={selectedItem}
+            onCursorChange={handleCursorChange}
           />
         </Canvas>
 
@@ -134,6 +140,18 @@ export default function Almacen3dPage() {
         )}
 
         <Toolbar onResetCamera={handleResetCamera} />
+
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center p-2">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-1.5 text-xs shadow-lg backdrop-blur-sm">
+            <span className="font-medium text-foreground">
+              {cursorInfo.pasillo} <span className="text-muted-foreground">/</span> Rack {cursorInfo.rack} <span className="text-muted-foreground">/</span> Nivel {cursorInfo.nivel}
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span className={cursorInfo.libres === 0 ? 'text-critical font-medium' : 'text-muted-foreground'}>
+              {cursorInfo.ocupados}/5 ocupados · {cursorInfo.libres} libre{cursorInfo.libres !== 1 ? 's' : ''}
+            </span>
+          </div>
+        </div>
 
         <div className="absolute left-4 top-4 flex gap-3">
           <MiniStat value={activeAlertCount} label="Alertas" color="text-warning" />
