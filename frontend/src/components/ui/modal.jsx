@@ -1,14 +1,13 @@
-import { X } from 'lucide-react'
+import { X } from "lucide-react";
 
 export function Modal({ open, onClose, title, children, footer, width = 480 }) {
-  if (!open) return null
+  if (!open) return null;
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[10vh]"
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      onClick={onClose}
     >
       <div
         className="flex flex-col w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface)] shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
@@ -16,7 +15,9 @@ export function Modal({ open, onClose, title, children, footer, width = 480 }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] px-4 py-3">
-          <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">{title}</h2>
+          <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">
+            {title}
+          </h2>
           {onClose && (
             <button
               type="button"
@@ -38,7 +39,7 @@ export function Modal({ open, onClose, title, children, footer, width = 480 }) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export function ModalFooter({ children }) {
@@ -46,5 +47,5 @@ export function ModalFooter({ children }) {
     <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-4 py-3">
       {children}
     </div>
-  )
+  );
 }
