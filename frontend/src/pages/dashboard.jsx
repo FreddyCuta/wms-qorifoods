@@ -33,48 +33,11 @@ function parseDateTime(dtStr) {
   return new Date(y, m - 1, d, hh, mm).getTime();
 }
 
-function InitialsAvatar({ name, className }) {
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-  return (
-    <span
-      className={cn(
-        "inline-flex size-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary",
-        className,
-      )}
-    >
-      {initials}
-    </span>
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <div className="mb-4">
-      <h2 className="text-lg font-bold text-foreground">{children}</h2>
-      <div className="mt-1.5 h-px bg-border" />
-    </div>
-  );
-}
-
-function EmptyState({ icon, children }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-      {icon}
-      <p className="mt-2 text-sm">{children}</p>
-    </div>
-  );
-}
-
 function PulseDot() {
   return (
     <span className="relative flex size-2">
-      <span className="absolute inline-flex size-full animate-ping rounded-full bg-warning opacity-75" />
-      <span className="relative inline-flex size-2 rounded-full bg-warning" />
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-[var(--warning)] opacity-75" />
+      <span className="relative inline-flex size-2 rounded-full bg-[var(--warning)]" />
     </span>
   );
 }
@@ -277,222 +240,153 @@ export default function DashboardPage() {
     return { members, lastTasks };
   }, [users, tasks, currentUser]);
 
+  function InitialsAvatar({ name, className }) {
+    const initials = name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+    return (
+      <span
+        className={cn(
+          "inline-flex size-6 items-center justify-center rounded-sm bg-[var(--accent-subtle)] text-[10px] font-medium text-[var(--accent-text)]",
+          className,
+        )}
+      >
+        {initials}
+      </span>
+    );
+  }
+
   return (
     <AppShell title="Dashboard" allowedRoles={["jefe"]}>
-      <div className="space-y-8">
-        {/* ───── Section 1: KPI Cards ───── */}
+      <div className="space-y-6">
         <section>
-          <SectionTitle>Resumen del Almacén</SectionTitle>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[18px] font-semibold text-[var(--text-primary)]">Resumen del Almacén</h2>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <KpiCard
-              icon={<Boxes className="size-5" />}
-              value={kpiData.insumosRegistrados}
+              value={fmt(kpiData.insumosRegistrados)}
               label="Insumos registrados"
-              borderColor="border-l-green-600"
-              iconColor="text-green-600"
+              valueColor={kpiData.insumosRegistrados > 0 ? undefined : "text-[var(--text-tertiary)]"}
             />
             <KpiCard
-              icon={<Package className="size-5" />}
-              value={kpiData.lotesActivosCount}
+              value={fmt(kpiData.lotesActivosCount)}
               label="Lotes activos"
-              borderColor="border-l-green-600"
-              iconColor="text-green-600"
+              valueColor={kpiData.lotesActivosCount > 0 ? undefined : "text-[var(--text-tertiary)]"}
             />
             <KpiCard
-              icon={<AlertTriangle className="size-5" />}
-              value={kpiData.stockCritico}
+              value={fmt(kpiData.stockCritico)}
               label="Stock crítico"
-              borderColor="border-l-red-500"
-              iconColor={
-                kpiData.stockCritico > 0 ? "text-red-500" : "text-green-600"
-              }
-              valueColor={kpiData.stockCritico > 0 ? "text-red-500" : ""}
+              valueColor={kpiData.stockCritico > 0 ? "text-[var(--danger)]" : undefined}
             />
             <KpiCard
-              icon={<ClipboardList className="size-5" />}
-              value={kpiData.reqsPendientes}
+              value={fmt(kpiData.reqsPendientes)}
               label="Requerimientos pendientes"
-              borderColor="border-l-amber-500"
-              iconColor={
-                kpiData.reqsPendientes > 0 ? "text-amber-500" : "text-green-600"
-              }
-              valueColor={kpiData.reqsPendientes > 0 ? "text-amber-500" : ""}
+              valueColor={kpiData.reqsPendientes > 0 ? "text-[var(--warning)]" : undefined}
             />
             <KpiCard
-              icon={<Bell className="size-5" />}
-              value={kpiData.alertasActivas}
+              value={fmt(kpiData.alertasActivas)}
               label="Alertas activas"
-              borderColor="border-l-red-500"
-              iconColor={
-                kpiData.alertasActivas > 0 ? "text-red-500" : "text-green-600"
-              }
-              valueColor={kpiData.alertasActivas > 0 ? "text-red-500" : ""}
+              valueColor={kpiData.alertasActivas > 0 ? "text-[var(--danger)]" : undefined}
             />
           </div>
         </section>
 
-        {/* ───── Section 2: Inventory Status Table ───── */}
         <section>
-          <SectionTitle>Estado del Inventario por Insumo</SectionTitle>
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[18px] font-semibold text-[var(--text-primary)]">Estado del Inventario por Insumo</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
               <thead>
-                <tr className="bg-muted text-left text-xs font-semibold text-muted-foreground">
-                  <th className="px-4 py-3">Insumo</th>
-                  <th className="px-4 py-3">Proveedor</th>
-                  <th className="px-4 py-3">Stock total</th>
-                  <th className="px-4 py-3">P. reorden</th>
-                  <th className="px-4 py-3">Cobertura</th>
-                  <th className="px-4 py-3">Lead time</th>
-                  <th className="px-4 py-3">Lotes</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Alerta</th>
-                  <th className="w-8 px-4 py-3" />
+                <tr className="bg-[var(--surface-overlay)] text-left text-[11px] font-medium uppercase tracking-wide text-[var(--text-tertiary)]">
+                  <th className="px-3 py-2">Insumo</th>
+                  <th className="px-3 py-2">Proveedor</th>
+                  <th className="px-3 py-2">Stock total</th>
+                  <th className="px-3 py-2">P. reorden</th>
+                  <th className="px-3 py-2">Cobertura</th>
+                  <th className="px-3 py-2">Lead time</th>
+                  <th className="px-3 py-2">Lotes</th>
+                  <th className="px-3 py-2">Estado</th>
+                  <th className="px-3 py-2">Alerta</th>
+                  <th className="w-8 px-3 py-2" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-[var(--border-subtle)]">
                 {insumoStatusData.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={10}
-                      className="px-4 py-12 text-center text-sm text-muted-foreground"
-                    >
+                    <td colSpan={10} className="px-3 py-8 text-center text-[13px] text-[var(--text-tertiary)]">
                       No hay insumos registrados.
                     </td>
                   </tr>
                 ) : (
                   insumoStatusData.map((row) => {
                     const isExpanded = expandedRow === row.nombre;
-                    const rowBg =
-                      row.estado === "Agotado"
-                        ? "bg-critical/5"
-                        : row.estado === "Stock bajo"
-                          ? "bg-warning/5"
-                          : "";
-                    const borderLeft =
-                      row.estado === "Agotado"
-                        ? "border-l-2 border-l-red-400"
-                        : row.estado === "Stock bajo"
-                          ? "border-l-2 border-l-amber-400"
-                          : "border-l-2 border-l-transparent";
                     return (
                       <>
                         <tr
                           key={row.nombre}
                           className={cn(
-                            "cursor-pointer transition-colors hover:bg-muted/50",
-                            rowBg,
-                            borderLeft,
+                            "group cursor-pointer transition-colors hover:bg-[var(--surface-raised)] h-10",
                           )}
                           onClick={() => toggleRow(row.nombre)}
                         >
-                          <td className="px-4 py-3 font-medium text-foreground">
-                            {row.nombre}
+                          <td className="px-3 font-medium text-[var(--text-primary)]">{row.nombre}</td>
+                          <td className="px-3 text-[var(--text-secondary)]">{row.proveedor}</td>
+                          <td className="px-3 font-medium text-[var(--text-primary)]">{qty(row.stockTotal, row.unidad)}</td>
+                          <td className="px-3 text-[var(--text-secondary)]">{qty(row.puntoReorden, row.unidad)}</td>
+                          <td className="px-3 text-[var(--text-secondary)]">
+                            {row.cobertura !== null ? `${row.cobertura} días` : "Sin datos"}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {row.proveedor}
+                          <td className="px-3 text-[var(--text-secondary)]">
+                            {row.leadTime !== null ? `${row.leadTime} días` : "—"}
                           </td>
-                          <td className="px-4 py-3 font-medium text-foreground">
-                            {qty(row.stockTotal, row.unidad)}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {qty(row.puntoReorden, row.unidad)}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {row.cobertura !== null
-                              ? `${row.cobertura} días`
-                              : "Sin datos"}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {row.leadTime !== null
-                              ? `${row.leadTime} días`
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-foreground">
-                            {row.lotesCount}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge color={row.estadoColor}>{row.estado}</Badge>
-                          </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 text-[var(--text-primary)]">{row.lotesCount}</td>
+                          <td className="px-3"><Badge color={row.estadoColor}>{row.estado}</Badge></td>
+                          <td className="px-3">
                             {row.alertaActiva ? (
-                              <Bell className="size-4 text-red-500" />
+                              <Bell className="size-4 text-[var(--danger)]" />
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="text-[var(--text-tertiary)]">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {isExpanded ? (
-                              <ChevronDown className="size-4" />
-                            ) : (
-                              <ChevronRight className="size-4" />
-                            )}
+                          <td className="px-3 text-[var(--text-tertiary)]">
+                            {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                           </td>
                         </tr>
                         {isExpanded && (
                           <tr key={`${row.nombre}-detail`}>
-                            <td colSpan={10} className="bg-card/50 px-6 py-4">
+                            <td colSpan={10} className="bg-[var(--surface-raised)]/50 px-4 py-3">
                               <div className="space-y-4">
                                 <div>
-                                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Lotes activos
-                                  </h4>
+                                  <h4 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[var(--text-tertiary)]">Lotes activos</h4>
                                   {row.activeLotes.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">
-                                      Sin lotes activos.
-                                    </p>
+                                    <p className="text-[13px] text-[var(--text-tertiary)]">Sin lotes activos.</p>
                                   ) : (
-                                    <div className="overflow-x-auto rounded border border-border">
-                                      <table className="w-full text-xs">
+                                    <div className="overflow-x-auto border border-[var(--border-subtle)] rounded-sm">
+                                      <table className="w-full text-[12px]">
                                         <thead>
-                                          <tr className="bg-muted/50 text-left text-muted-foreground">
-                                            <th className="px-3 py-2">
-                                              Código
-                                            </th>
-                                            <th className="px-3 py-2">
-                                              Cantidad
-                                            </th>
-                                            <th className="px-3 py-2">
-                                              Vencimiento
-                                            </th>
-                                            <th className="px-3 py-2">
-                                              Ubicación
-                                            </th>
-                                            <th className="px-3 py-2">
-                                              Estado
-                                            </th>
+                                          <tr className="bg-[var(--surface-overlay)] text-left text-[var(--text-tertiary)]">
+                                            <th className="px-2 py-1.5">Código</th>
+                                            <th className="px-2 py-1.5">Cantidad</th>
+                                            <th className="px-2 py-1.5">Vencimiento</th>
+                                            <th className="px-2 py-1.5">Ubicación</th>
+                                            <th className="px-2 py-1.5">Estado</th>
                                           </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-border">
+                                        <tbody className="divide-y divide-[var(--border-subtle)]">
                                           {row.activeLotes.map((l) => (
                                             <tr key={l.id}>
-                                              <td className="px-3 py-2 font-medium text-foreground">
-                                                {l.codigoLote}
-                                              </td>
-                                              <td className="px-3 py-2 text-muted-foreground">
-                                                {qty(l.cantidad, l.unidad)}
-                                              </td>
-                                              <td className="px-3 py-2 text-muted-foreground">
-                                                {l.vencimiento}
-                                              </td>
-                                              <td className="px-3 py-2 text-muted-foreground">
-                                                {l.ubicacion}
-                                              </td>
-                                              <td className="px-3 py-2">
-                                                <Badge
-                                                  color={
-                                                    l.estado === "disponible"
-                                                      ? "green"
-                                                      : l.estado === "bajo"
-                                                        ? "amber"
-                                                        : "red"
-                                                  }
-                                                >
-                                                  {l.estado === "disponible"
-                                                    ? "Disponible"
-                                                    : l.estado === "bajo"
-                                                      ? "Stock bajo"
-                                                      : "Agotado"}
+                                              <td className="px-2 py-1.5 font-medium text-[var(--text-primary)]">{l.codigoLote}</td>
+                                              <td className="px-2 py-1.5 text-[var(--text-secondary)]">{qty(l.cantidad, l.unidad)}</td>
+                                              <td className="px-2 py-1.5 text-[var(--text-secondary)]">{l.vencimiento}</td>
+                                              <td className="px-2 py-1.5 text-[var(--text-secondary)]">{l.ubicacion}</td>
+                                              <td className="px-2 py-1.5">
+                                                <Badge color={l.estado === "disponible" ? "green" : l.estado === "bajo" ? "amber" : "red"}>
+                                                  {l.estado === "disponible" ? "Disponible" : l.estado === "bajo" ? "Stock bajo" : "Agotado"}
                                                 </Badge>
                                               </td>
                                             </tr>
@@ -503,64 +397,33 @@ export default function DashboardPage() {
                                   )}
                                 </div>
                                 <div>
-                                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Últimos requerimientos
-                                  </h4>
+                                  <h4 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[var(--text-tertiary)]">Últimos requerimientos</h4>
                                   {row.reqsRelacionados.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">
-                                      Sin requerimientos previos.
-                                    </p>
+                                    <p className="text-[13px] text-[var(--text-tertiary)]">Sin requerimientos previos.</p>
                                   ) : (
-                                    <div className="overflow-x-auto rounded border border-border">
-                                      <table className="w-full text-xs">
+                                    <div className="overflow-x-auto border border-[var(--border-subtle)] rounded-sm">
+                                      <table className="w-full text-[12px]">
                                         <thead>
-                                          <tr className="bg-muted/50 text-left text-muted-foreground">
-                                            <th className="px-3 py-2">N°</th>
-                                            <th className="px-3 py-2">Fecha</th>
-                                            <th className="px-3 py-2">
-                                              Cantidad solicitada
-                                            </th>
-                                            <th className="px-3 py-2">
-                                              Estado
-                                            </th>
+                                          <tr className="bg-[var(--surface-overlay)] text-left text-[var(--text-tertiary)]">
+                                            <th className="px-2 py-1.5">N°</th>
+                                            <th className="px-2 py-1.5">Fecha</th>
+                                            <th className="px-2 py-1.5">Cantidad solicitada</th>
+                                            <th className="px-2 py-1.5">Estado</th>
                                           </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-border">
+                                        <tbody className="divide-y divide-[var(--border-subtle)]">
                                           {row.reqsRelacionados.map((r) => {
-                                            const ins = r.insumos.find(
-                                              (i) => i.insumo === row.nombre,
-                                            );
+                                            const ins = r.insumos.find((i) => i.insumo === row.nombre);
                                             return (
                                               <tr key={r.id}>
-                                                <td className="px-3 py-2 font-medium text-foreground">
-                                                  {r.numero}
+                                                <td className="px-2 py-1.5 font-medium text-[var(--text-primary)]">{r.numero}</td>
+                                                <td className="px-2 py-1.5 text-[var(--text-secondary)]">{r.fechaSolicitud}</td>
+                                                <td className="px-2 py-1.5 text-[var(--text-secondary)]">
+                                                  {ins ? qty(ins.cantidad, ins.unidad) : "—"}
                                                 </td>
-                                                <td className="px-3 py-2 text-muted-foreground">
-                                                  {r.fechaSolicitud}
-                                                </td>
-                                                <td className="px-3 py-2 text-muted-foreground">
-                                                  {ins
-                                                    ? qty(
-                                                        ins.cantidad,
-                                                        ins.unidad,
-                                                      )
-                                                    : "—"}
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                  <Badge
-                                                    color={
-                                                      r.estado === "atendido"
-                                                        ? "green"
-                                                        : r.estado === "parcial"
-                                                          ? "amber"
-                                                          : "blue"
-                                                    }
-                                                  >
-                                                    {r.estado === "atendido"
-                                                      ? "Atendido"
-                                                      : r.estado === "parcial"
-                                                        ? "Parcial"
-                                                        : "Pendiente"}
+                                                <td className="px-2 py-1.5">
+                                                  <Badge color={r.estado === "atendido" ? "green" : r.estado === "parcial" ? "amber" : "blue"}>
+                                                    {r.estado === "atendido" ? "Atendido" : r.estado === "parcial" ? "Parcial" : "Pendiente"}
                                                   </Badge>
                                                 </td>
                                               </tr>
@@ -584,59 +447,28 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ───── Section 3: Two columns ───── */}
         <section>
-          <SectionTitle>
-            Movimientos recientes y Lotes próximos a vencer
-          </SectionTitle>
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Left: Recent movements */}
-            <div className="rounded-lg border border-border">
-              <div className="border-b border-border px-4 py-3">
-                <h3 className="text-sm font-bold text-foreground">
-                  Movimientos recientes
-                </h3>
+          <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-3">Movimientos recientes y Lotes próximos a vencer</h2>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="border border-[var(--border-subtle)] rounded-md">
+              <div className="border-b border-[var(--border-subtle)] px-3 py-2">
+                <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Movimientos recientes</h3>
               </div>
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-[var(--border-subtle)]">
                 {recentRequirements.length === 0 ? (
-                  <EmptyState icon={<ClipboardList className="size-8" />}>
-                    No hay requerimientos registrados.
-                  </EmptyState>
+                  <p className="py-6 text-center text-[13px] text-[var(--text-tertiary)]">No hay requerimientos registrados.</p>
                 ) : (
                   recentRequirements.map((r) => (
-                    <div
-                      key={r.id}
-                      className="flex items-center gap-3 px-4 py-3 text-sm"
-                    >
+                    <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 text-[13px]">
                       <div className="flex shrink-0 items-center gap-1.5">
                         {r.estado === "pendiente" && <PulseDot />}
-                        <span className="font-medium text-foreground">
-                          {r.numero}
-                        </span>
+                        <span className="font-medium text-[var(--text-primary)]">{r.numero}</span>
                       </div>
-                      <span className="text-muted-foreground">
-                        {r.fechaRegistro}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {r.registradoPor}
-                      </span>
-                      <span className="ml-auto text-muted-foreground">
-                        {r.insumos.length} insumos
-                      </span>
-                      <Badge
-                        color={
-                          r.estado === "atendido"
-                            ? "green"
-                            : r.estado === "parcial"
-                              ? "amber"
-                              : "blue"
-                        }
-                      >
-                        {r.estado === "atendido"
-                          ? "Atendido"
-                          : r.estado === "parcial"
-                            ? "Parcial"
-                            : "Pendiente"}
+                      <span className="text-[var(--text-secondary)]">{r.fechaRegistro}</span>
+                      <span className="text-[var(--text-secondary)]">{r.registradoPor}</span>
+                      <span className="ml-auto text-[var(--text-secondary)]">{r.insumos.length} insumos</span>
+                      <Badge color={r.estado === "atendido" ? "green" : r.estado === "parcial" ? "amber" : "blue"}>
+                        {r.estado === "atendido" ? "Atendido" : r.estado === "parcial" ? "Parcial" : "Pendiente"}
                       </Badge>
                     </div>
                   ))
@@ -644,21 +476,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Right: Expiring lots */}
-            <div className="rounded-lg border border-border">
-              <div className="border-b border-border px-4 py-3">
-                <h3 className="text-sm font-bold text-foreground">
-                  Lotes próximos a vencer
-                </h3>
+            <div className="border border-[var(--border-subtle)] rounded-md">
+              <div className="border-b border-[var(--border-subtle)] px-3 py-2">
+                <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Lotes próximos a vencer</h3>
               </div>
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-[var(--border-subtle)]">
                 {!hasUrgentExpiring ? (
-                  <EmptyState
-                    icon={<CheckCircle className="size-8 text-green-500" />}
-                  >
-                    Todos los lotes están dentro del rango seguro de
-                    vencimiento.
-                  </EmptyState>
+                  <p className="py-6 text-center text-[13px] text-[var(--text-tertiary)]">Todos los lotes están dentro del rango seguro de vencimiento.</p>
                 ) : (
                   expiringLotes.map((l) => {
                     const remaining = daysUntil(l.vencimiento);
@@ -669,22 +493,13 @@ export default function DashboardPage() {
                       urgBadge = <Badge color="amber">Próximo</Badge>;
                     }
                     return (
-                      <div
-                        key={l.id}
-                        className="flex items-center gap-3 px-4 py-3 text-sm"
-                      >
-                        <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                      <div key={l.id} className="flex items-center gap-3 px-3 py-2.5 text-[13px]">
+                        <Calendar className="size-4 shrink-0 text-[var(--text-tertiary)]" />
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium text-foreground">
-                            {l.insumo}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {l.codigoLote} · {qty(l.cantidad, l.unidad)}
-                          </div>
+                          <div className="font-medium text-[var(--text-primary)]">{l.insumo}</div>
+                          <div className="text-[11px] text-[var(--text-secondary)]">{l.codigoLote} · {qty(l.cantidad, l.unidad)}</div>
                         </div>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {l.vencimiento}
-                        </span>
+                        <span className="shrink-0 text-[11px] text-[var(--text-secondary)]">{l.vencimiento}</span>
                         {urgBadge}
                       </div>
                     );
@@ -695,46 +510,24 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ───── Section 4: CSS Bar Chart ───── */}
         <section>
-          <SectionTitle>Distribución de Stock por Insumo</SectionTitle>
-          <div className="rounded-lg border border-border p-4">
+          <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-3">Distribución de Stock por Insumo</h2>
+          <div className="border border-[var(--border-subtle)] rounded-md p-4">
             {insumoStatusData.length === 0 ? (
-              <EmptyState icon={<Package className="size-8" />}>
-                No hay insumos registrados.
-              </EmptyState>
+              <p className="py-6 text-center text-[13px] text-[var(--text-tertiary)]">No hay insumos registrados.</p>
             ) : (
               <div className="space-y-4">
                 {insumoStatusData.map((row) => {
-                  const pct = Math.min(
-                    100,
-                    (row.stockTotal / row.maxCapacidad) * 100,
-                  );
-                  const barColor =
-                    row.estadoColor === "green"
-                      ? "bg-green-600"
-                      : row.estadoColor === "amber"
-                        ? "bg-amber-500"
-                        : "bg-red-500";
+                  const pct = Math.min(100, (row.stockTotal / row.maxCapacidad) * 100);
+                  const barColor = row.estadoColor === "green" ? "bg-[var(--success)]" : row.estadoColor === "amber" ? "bg-[var(--warning)]" : "bg-[var(--danger)]";
                   return (
                     <div key={row.nombre} className="flex items-center gap-4">
-                      <span
-                        className="w-40 shrink-0 truncate text-sm font-medium text-foreground"
-                        title={row.nombre}
-                      >
-                        {row.nombre}
-                      </span>
+                      <span className="w-36 shrink-0 truncate text-[13px] font-medium text-[var(--text-primary)]" title={row.nombre}>{row.nombre}</span>
                       <div className="flex-1">
-                        <div className="h-4 w-full overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all duration-600 ease-out",
-                              barColor,
-                            )}
-                            style={{ width: `${pct}%` }}
-                          />
+                        <div className="h-2 w-full overflow-hidden rounded-sm bg-[var(--surface-overlay)]">
+                          <div className={cn("h-full rounded-sm transition-all duration-600 ease-out", barColor)} style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="mt-0.5 flex justify-between text-xs text-muted-foreground">
+                        <div className="mt-0.5 flex justify-between text-[11px] text-[var(--text-tertiary)]">
                           <span>{qty(row.stockTotal, row.unidad)}</span>
                           <span>{Math.round(pct)}%</span>
                         </div>
@@ -747,72 +540,41 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ───── Section 5: Active Requirements ───── */}
         <section>
-          <SectionTitle>Requerimientos Activos</SectionTitle>
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-3">Requerimientos Activos</h2>
+          <div className="overflow-x-auto">
             {activeRequirements.length === 0 ? (
-              <EmptyState
-                icon={<CheckCircle className="size-8 text-green-500" />}
-              >
-                No hay requerimientos pendientes de atención.
-              </EmptyState>
+              <p className="py-6 text-center text-[13px] text-[var(--text-tertiary)]">No hay requerimientos pendientes de atención.</p>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="bg-muted text-left text-xs font-semibold text-muted-foreground">
-                    <th className="px-4 py-3">N° requerimiento</th>
-                    <th className="px-4 py-3">Fecha solicitud</th>
-                    <th className="px-4 py-3">Registrado por</th>
-                    <th className="px-4 py-3">Insumos</th>
-                    <th className="px-4 py-3">Estado</th>
-                    <th className="px-4 py-3">Días en espera</th>
+                  <tr className="bg-[var(--surface-overlay)] text-left text-[11px] font-medium uppercase tracking-wide text-[var(--text-tertiary)]">
+                    <th className="px-3 py-2">N° requerimiento</th>
+                    <th className="px-3 py-2">Fecha solicitud</th>
+                    <th className="px-3 py-2">Registrado por</th>
+                    <th className="px-3 py-2">Insumos</th>
+                    <th className="px-3 py-2">Estado</th>
+                    <th className="px-3 py-2">Días en espera</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-[var(--border-subtle)]">
                   {activeRequirements.map((r) => {
-                    const insumosText = r.insumos
-                      .slice(0, 2)
-                      .map((i) => `${i.insumo} (${i.cantidad}${i.unidad})`)
-                      .join(", ");
+                    const insumosText = r.insumos.slice(0, 2).map((i) => `${i.insumo} (${i.cantidad}${i.unidad})`).join(", ");
                     const hasMore = r.insumos.length > 2;
                     return (
-                      <tr
-                        key={r.id}
-                        className="transition-colors hover:bg-muted/50"
-                      >
-                        <td className="px-4 py-3 font-medium text-foreground">
-                          {r.numero}
+                      <tr key={r.id} className="group hover:bg-[var(--surface-raised)]">
+                        <td className="px-3 py-2.5 font-medium text-[var(--text-primary)]">{r.numero}</td>
+                        <td className="px-3 py-2.5 text-[var(--text-secondary)]">{r.fechaSolicitud}</td>
+                        <td className="px-3 py-2.5 text-[var(--text-secondary)]">{r.registradoPor}</td>
+                        <td className="px-3 py-2.5 text-[var(--text-secondary)]">
+                          {insumosText}{hasMore && <span className="text-[var(--text-tertiary)]">…</span>}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {r.fechaSolicitud}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {r.registradoPor}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {insumosText}
-                          {hasMore && (
-                            <span className="text-xs text-muted-foreground">
-                              …
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            color={r.estado === "pendiente" ? "blue" : "amber"}
-                          >
+                        <td className="px-3 py-2.5">
+                          <Badge color={r.estado === "pendiente" ? "blue" : "amber"}>
                             {r.estado === "pendiente" ? "Pendiente" : "Parcial"}
                           </Badge>
                         </td>
-                        <td
-                          className={cn(
-                            "px-4 py-3 font-medium",
-                            r.diasEspera > 2
-                              ? "text-red-500"
-                              : "text-muted-foreground",
-                          )}
-                        >
+                        <td className={cn("px-3 py-2.5 font-medium", r.diasEspera > 2 ? "text-[var(--danger)]" : "text-[var(--text-secondary)]")}>
                           {r.diasEspera} días
                         </td>
                       </tr>
@@ -824,55 +586,32 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ───── Section 6: Team Activity (jefe only) ───── */}
         {currentUser.role === "jefe" && (
           <section>
-            <SectionTitle>Resumen de Usuarios y Responsabilidades</SectionTitle>
-            <div className="grid gap-6 lg:grid-cols-2">
-              {/* Left: Team activity */}
-              <div className="rounded-lg border border-border">
-                <div className="border-b border-border px-4 py-3">
-                  <h3 className="text-sm font-bold text-foreground">
-                    Actividad del equipo
-                  </h3>
+            <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-3">Resumen de Usuarios y Responsabilidades</h2>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="border border-[var(--border-subtle)] rounded-md">
+                <div className="border-b border-[var(--border-subtle)] px-3 py-2">
+                  <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Actividad del equipo</h3>
                 </div>
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-[var(--border-subtle)]">
                   {teamActivity.members.length === 0 ? (
-                    <EmptyState icon={<User className="size-8" />}>
-                      No hay miembros activos en el equipo.
-                    </EmptyState>
+                    <p className="py-6 text-center text-[13px] text-[var(--text-tertiary)]">No hay miembros activos en el equipo.</p>
                   ) : (
                     teamActivity.members.map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center gap-3 px-4 py-3"
-                      >
+                      <div key={m.id} className="flex items-center gap-3 px-3 py-2.5">
                         <InitialsAvatar name={m.nombre} />
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium text-foreground">
-                            {m.nombre}
-                          </div>
-                          <Badge
-                            color={m.role === "supervisor" ? "amber" : "gray"}
-                          >
-                            {m.role === "supervisor"
-                              ? "Supervisor"
-                              : "Operario"}
+                          <div className="text-[13px] font-medium text-[var(--text-primary)]">{m.nombre}</div>
+                          <Badge color={m.role === "supervisor" ? "amber" : "gray"}>
+                            {m.role === "supervisor" ? "Supervisor" : "Operario"}
                           </Badge>
                         </div>
-                        <div className="text-right text-xs text-muted-foreground">
-                          <div
-                            className={
-                              m.pendingCount > 2
-                                ? "text-red-500 font-medium"
-                                : ""
-                            }
-                          >
+                        <div className="text-right text-[11px] text-[var(--text-secondary)]">
+                          <div className={m.pendingCount > 2 ? "text-[var(--danger)] font-medium" : ""}>
                             Tareas pendientes: {m.pendingCount}
                           </div>
-                          <div className="text-green-600">
-                            Completadas: {m.completedCount}
-                          </div>
+                          <div className="text-[var(--success)]">Completadas: {m.completedCount}</div>
                         </div>
                       </div>
                     ))
@@ -880,44 +619,25 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Right: Last responsibilities */}
-              <div className="rounded-lg border border-border">
-                <div className="border-b border-border px-4 py-3">
-                  <h3 className="text-sm font-bold text-foreground">
-                    Últimas responsabilidades asignadas
-                  </h3>
+              <div className="border border-[var(--border-subtle)] rounded-md">
+                <div className="border-b border-[var(--border-subtle)] px-3 py-2">
+                  <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Últimas responsabilidades asignadas</h3>
                 </div>
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-[var(--border-subtle)]">
                   {teamActivity.lastTasks.length === 0 ? (
-                    <EmptyState icon={<ClipboardList className="size-8" />}>
-                      No hay responsabilidades asignadas recientemente.
-                    </EmptyState>
+                    <p className="py-6 text-center text-[13px] text-[var(--text-tertiary)]">No hay responsabilidades asignadas recientemente.</p>
                   ) : (
                     teamActivity.lastTasks.map((t) => (
-                      <div
-                        key={t.id}
-                        className="flex items-center gap-3 px-4 py-3"
-                      >
+                      <div key={t.id} className="flex items-center gap-3 px-3 py-2.5">
                         <InitialsAvatar name={t.assigneeName} />
                         <div className="min-w-0 flex-1">
-                          <div
-                            className="text-sm text-foreground"
-                            title={t.description}
-                          >
-                            {t.description.length > 60
-                              ? `${t.description.slice(0, 60)}…`
-                              : t.description}
+                          <div className="text-[13px] text-[var(--text-primary)]" title={t.description}>
+                            {t.description.length > 60 ? `${t.description.slice(0, 60)}…` : t.description}
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {t.timestamp}
-                          </div>
+                          <div className="text-[11px] text-[var(--text-secondary)]">{t.timestamp}</div>
                         </div>
-                        <Badge
-                          color={t.status === "completada" ? "green" : "amber"}
-                        >
-                          {t.status === "completada"
-                            ? "Completada"
-                            : "Pendiente"}
+                        <Badge color={t.status === "completada" ? "green" : "amber"}>
+                          {t.status === "completada" ? "Completada" : "Pendiente"}
                         </Badge>
                       </div>
                     ))
@@ -932,33 +652,13 @@ export default function DashboardPage() {
   );
 }
 
-function KpiCard({ icon, value, label, borderColor, iconColor, valueColor }) {
+function KpiCard({ value, label, valueColor }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-4 rounded-lg border border-border bg-card border-l-4 px-4 py-4",
-        borderColor,
-      )}
-    >
-      <div
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-md bg-muted",
-          iconColor,
-        )}
-      >
-        {icon}
+    <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+      <div className={`text-[28px] font-bold leading-none ${valueColor || "text-[var(--text-primary)]"}`}>
+        {value}
       </div>
-      <div className="min-w-0 flex-1">
-        <div
-          className={cn(
-            "text-2xl font-bold leading-none text-foreground",
-            valueColor,
-          )}
-        >
-          {fmt(value)}
-        </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
-      </div>
+      <p className="mt-1 text-[12px] text-[var(--text-tertiary)]">{label}</p>
     </div>
   );
 }

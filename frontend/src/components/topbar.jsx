@@ -2,36 +2,34 @@ import { useNavigate } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
 
-// Barra superior fija. Muestra el título de la pantalla, el botón de alertas de reabastecimiento
-// (visible solo para jefe/supervisor) y el nombre del usuario activo.
 export function Topbar({ title }) {
   const { currentUser, activeAlertCount } = useApp()
   const navigate = useNavigate()
   if (!currentUser) return null
 
-  // La campana de alertas solo se muestra para el supervisor porque es quien gestiona reabastecimientos
   const showBell = currentUser.role === 'supervisor'
 
   return (
-    <header className="fixed inset-x-0 left-60 top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-card px-8">
-      <h1 className="text-lg font-bold text-foreground">{title}</h1>
-      <div className="flex items-center gap-5">
+    <header className="fixed inset-x-0 left-[220px] top-0 z-20 flex h-11 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface)] px-6">
+      <h1 className="text-[14px] font-semibold text-[var(--text-primary)]">{title}</h1>
+      <div className="flex items-center gap-3">
         {showBell && (
           <button
             type="button"
             onClick={() => navigate('/alertas')}
             aria-label={`Alertas de reabastecimiento: ${activeAlertCount}`}
-            className="relative rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="relative rounded p-1 text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-secondary)]"
           >
-            <Bell className="size-5" />
+            <Bell className="size-[18px]" />
             {activeAlertCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-critical text-[10px] font-bold text-critical-foreground">
+              <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--danger)] text-[10px] font-medium text-white">
                 {activeAlertCount}
               </span>
             )}
           </button>
         )}
-        <span className="text-sm font-medium text-foreground">{currentUser.nombre}</span>
+        <div className="h-4 w-px bg-[var(--border-subtle)]" />
+        <span className="text-[13px] text-[var(--text-secondary)]">{currentUser.nombre}</span>
       </div>
     </header>
   )

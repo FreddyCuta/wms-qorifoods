@@ -1,46 +1,49 @@
 import { X } from 'lucide-react'
-import { cn } from '../../lib/utils.js'
 
-// Modal genérico reutilizable. Se controla con open/onClose, recibe un título y un ancho configurable (por defecto 520px).
-// El fondo oscuro (overlay) cierra el modal al hacer clic fuera, y el botón de cerrar permite cerrarlo manualmente.
-export function Modal({ open, onClose, title, children, width = 520 }) {
+export function Modal({ open, onClose, title, children, footer, width = 480 }) {
   if (!open) return null
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[10vh]"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onClick={onClose}
     >
       <div
-        className="w-full rounded-xl border border-border bg-card p-6 shadow-xl"
+        className="flex flex-col w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface)] shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
         style={{ maxWidth: width }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-start justify-between gap-4">
-          <h2 className="text-lg font-bold text-foreground text-balance">{title}</h2>
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] px-4 py-3">
+          <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">{title}</h2>
           {onClose && (
             <button
               type="button"
               onClick={onClose}
               aria-label="Cerrar"
-              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="rounded p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)]"
             >
               <X className="size-4" />
             </button>
           )}
         </div>
-        {children}
+        <div className="px-4 py-4 text-[13px] text-[var(--text-secondary)]">
+          {children}
+        </div>
+        {footer && (
+          <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-4 py-3 rounded-b-lg">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-// Footer del modal, alineado a la derecha. Se usa para poner los botones de acción (confirmar/cancelar).
 export function ModalFooter({ children }) {
   return (
-    <div className={cn('mt-6 flex items-center justify-end gap-2')}>
+    <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-4 py-3">
       {children}
     </div>
   )

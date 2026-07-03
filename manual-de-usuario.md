@@ -2,12 +2,12 @@
 
 ## WMS Qori Foods — Sistema de Gestión de Almacén de Insumos
 
-|                 |                                         |
-|-----------------|-----------------------------------------|
+| | |
+|---|---|
 | **Nombre del sistema** | WMS Qori Foods — Almacén de Insumos |
-| **Versión**     | 1.0.0                                   |
-| **Fecha de elaboración** | Julio 2026                        |
-| **Equipo desarrollador** | [Nombre del equipo]                |
+| **Versión** | 1.0.0 |
+| **Fecha de elaboración** | Julio 2026 |
+| **Equipo desarrollador** | [Nombre del equipo] |
 
 ---
 
@@ -35,13 +35,13 @@ Este manual está dirigido a los tres perfiles de usuario del sistema:
 
 ### Hardware mínimo
 
-| Componente       | Especificación                |
-|------------------|-------------------------------|
-| Procesador       | 1.5 GHz dual-core             |
-| Memoria RAM      | 4 GB                          |
-| Espacio en disco | 500 MB libres                 |
-| Conexión a red   | 2 Mbps (para visualización 3D) |
-| Tarjeta gráfica  | Compatible con WebGL          |
+| Componente | Especificación |
+|---|---|
+| Procesador | 1.5 GHz dual-core |
+| Memoria RAM | 4 GB |
+| Espacio en disco | 500 MB libres |
+| Conexión a red | 2 Mbps (para visualización 3D) |
+| Tarjeta gráfica | Compatible con WebGL |
 
 ### Software necesario
 
@@ -54,10 +54,9 @@ Este manual está dirigido a los tres perfiles de usuario del sistema:
 
 El sistema se ejecuta completamente en el navegador web. No requiere instalación de software adicional por parte del usuario. Solo necesita:
 
-1. Acceder a la URL proporcionada por el administrador.
-2. Iniciar sesión con sus credenciales.
-
-_Nota: La versión actual del sistema funciona con datos de demostración. La conexión a la base de datos y el backend estarán disponibles en versiones futuras._
+1. Acceder a la URL proporcionada por el administrador (ej: `http://localhost:5173`).
+2. Asegurarse de que el servidor backend y la base de datos estén en ejecución.
+3. Iniciar sesión con sus credenciales.
 
 ---
 
@@ -69,25 +68,22 @@ _Nota: La versión actual del sistema funciona con datos de demostración. La co
 2. Ingrese la URL del sistema (proporcionada por el administrador).
 3. Aparecerá la pantalla de inicio de sesión con dos campos:
 
-   - **Correo electrónico**: Ingrese su correo corporativo (ej: `maria@qorifoods.com`).
+   - **Correo electrónico**: Ingrese su correo corporativo.
    - **Contraseña**: Ingrese su contraseña.
 
 4. Haga clic en el botón **"Ingresar"** o presione la tecla **Enter**.
 
-![Pantalla de inicio de sesión]()
-
 ### Credenciales de prueba
 
-| Rol         | Correo                  | Contraseña     |
-|-------------|-------------------------|----------------|
-| Jefe        | maria@qorifoods.com     | jefe123        |
-| Supervisor  | pedro@qorifoods.com     | super123       |
-| Operario    | carlos@qorifoods.com    | operario123    |
-| Operario    | luis@qorifoods.com      | operario123    |
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Jefe de Almacén | maria@qorifoods.com | jefe123 |
+| Supervisor de Almacén | pedro@qorifoods.com | super123 |
+| Operario de Almacén | carlos@qorifoods.com | operario123 |
 
 ### Recuperación de contraseña
 
-_Nota: La funcionalidad de recuperación de contraseña estará disponible en la versión con backend. Actualmente, contacte al administrador para restablecer su contraseña._
+Contacte al administrador del sistema o al jefe de almacén para restablecer su contraseña.
 
 ### Cierre de sesión
 
@@ -104,36 +100,36 @@ _Nota: La funcionalidad de recuperación de contraseña estará disponible en la
 Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Logo Qori   │  [Título de página]        │ 🔔 │ Usuario   │  ← Topbar
-├──────────────┼──────────────────────────────────────────────┤
-│              │                                              │
-│  ● Inicio    │                                              │
-│  ● Dashboard │           CONTENIDO PRINCIPAL               │
-│  ● Insumos   │                                              │
-│  ● Inventario│                                              │
-│  ● 3D        │                                              │
-│  ● Usuarios  │                                              │
-│  ● Tareas    │                                              │
-│              │                                              │
-│  ┌────────┐  │                                              │
-│  │ Perfil  │  │                                              │
-│  │ Cerrar  │  │                                              │
-│  └────────┘  │                                              │
-├──────────────┴──────────────────────────────────────────────┤
-│  [Footer / notificaciones Toast]                            │
-└─────────────────────────── sidebar (240px) ─────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  Logo Qori   │  [Título de página]         │ 🔔 │ Usuario   │  ← Topbar (44px)
+├──────────────┼───────────────────────────────────────────────┤
+│              │                                               │
+│  ● Inicio    │                                               │
+│  ● Dashboard │            CONTENIDO PRINCIPAL               │
+│  ● Insumos   │                                               │
+│  ● Inventario│                                               │
+│  ● 3D        │                                               │
+│  ● Usuarios  │                                               │
+│  ● Tareas    │                                               │
+│              │                                               │
+│  ┌────────┐  │                                               │
+│  │ Perfil  │  │                                               │
+│  │ Cerrar  │  │                                               │
+│  └────────┘  │                                               │
+├──────────────┴───────────────────────────────────────────────┤
+│           [Notificaciones Toast]                              │
+└────────────────────────── sidebar (220px) ───────────────────┘
 ```
 
 ### Elementos de la interfaz
 
-| Elemento              | Descripción                                                              |
-|-----------------------|--------------------------------------------------------------------------|
-| **Sidebar (menú lateral)** | Navegación principal. Contiene los enlaces a las páginas según el rol del usuario. |
-| **Topbar (barra superior)** | Muestra el título de la página actual, el ícono de campana (alertas activas, solo supervisores) y el nombre del usuario logueado. |
-| **Área de contenido** | Muestra la página o funcionalidad seleccionada.                          |
+| Elemento | Descripción |
+|---|---|
+| **Sidebar (menú lateral)** | Navegación principal. Contiene los enlaces a las páginas según el rol del usuario. Ancho fijo de 220px con fondo marrón oscuro. |
+| **Topbar (barra superior)** | Muestra el título de la página actual, el ícono de campana (alertas activas, solo supervisores) y el nombre del usuario logueado. Altura de 44px. |
+| **Área de contenido** | Muestra la página o funcionalidad seleccionada. |
 | **Toast (notificación)** | Mensaje emergente temporal (esquina superior derecha) que confirma acciones o muestra errores. |
-| **Badge (etiqueta)**  | Indicador de estado con colores (verde = normal, ámbar = advertencia, rojo = crítico, azul = informativo). |
+| **Badge (etiqueta)** | Indicador de estado rectangular con colores (verde=normal, ámbar=advertencia, rojo=crítico, azul=informativo). |
 | **Modal (ventana emergente)** | Diálogo que aparece sobre el contenido para confirmar acciones, editar o crear registros. |
 
 ### Mapa de navegación
@@ -157,12 +153,12 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
           │                  │                  │
    ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐
    │• Dashboard  │   │• Requerim.  │   │• Ingreso    │
-   │• Insumos    │   │• Inventario │   │  de Lote    │
-   │• Inventario │   │• Almacén 3D │   │• Requerim.  │
-   │• Almacén 3D │   │• Alertas    │   │• Inventario │
-   │• Usuarios   │   └─────────────┘   │• Almacén 3D │
-   │• Tareas     │                      └─────────────┘
-   └─────────────┘
+   │• Insumos    │   │  (nuevo)    │   │  de Lote    │
+   │• Inventario │   │• Inventario │   │• Requerim.  │
+   │• Almacén 3D │   │• Almacén 3D │   │  (atender)  │
+   │• Usuarios   │   │• Alertas    │   │• Inventario │
+   │• Tareas     │   └─────────────┘   │• Almacén 3D │
+   └─────────────┘                      └─────────────┘
 ```
 
 ---
@@ -174,7 +170,6 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
 **Roles**: Todos
 
 **¿Qué hace?** Muestra un resumen adaptado al rol del usuario:
-
 - **Operario**: Lista de tareas pendientes asignadas por el jefe.
 - **Supervisor**: Tareas pendientes + contador de alertas activas con enlace directo.
 - **Jefe**: Conteo total de lotes registrados en el inventario.
@@ -227,14 +222,13 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
    - **Proveedor**: Ej: "Agroindustrias del Sur SAC".
    - **Unidad de medida**: Seleccione "kg" (kilogramos) o "L" (litros).
    - **Punto de reorden**: Cantidad mínima de stock que activará una alerta (ej: 100).
-   - **Lead time**: Días que tarda el proveedor en entregar (ej: 5).
 3. Haga clic en **"Registrar insumo"**.
-4. El nuevo insumo aparecerá en la lista de la parte inferior.
+4. El nuevo insumo aparecerá en la lista de la derecha.
 
 **Resultado esperado**: Insumo agregado al catálogo. Mensaje de confirmación "Insumo registrado".
 
 **Para editar**:
-1. En la lista de insumos registrados, haga clic en **"Editar"** junto al insumo deseado.
+1. En la lista de insumos registrados, haga clic en el ícono de lápiz junto al insumo deseado.
 2. Modifique los campos necesarios.
 3. Haga clic en **"Guardar cambios"**.
 
@@ -254,11 +248,11 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
    - **Fecha de vencimiento**: Seleccione la fecha del lote.
    - **Ubicación**: Seleccione Pasillo (A–D), Rack (1–6) y Nivel (1–5).
    - También puede hacer clic en **"Seleccionar en 3D"** para elegir la ubicación visualmente en el almacén tridimensional.
-3. El sistema muestra cuántos lotes hay actualmente en ese nivel **(X/5 ocupados · Y libres)**.
+3. El sistema muestra cuántos lotes hay actualmente en ese nivel (X/5 ocupados).
 4. Verifique que el nivel tenga espacio disponible (máximo 5 lotes por nivel).
 5. Haga clic en **"Registrar ingreso"**.
 
-**Resultado esperado**: Nuevo lote agregado al inventario con código de lote generado automáticamente. Mensaje de confirmación "Lote registrado exitosamente".
+**Resultado esperado**: Nuevo lote agregado al inventario con código de lote generado automáticamente. Mensaje de confirmación "Lote registrado correctamente".
 
 **Validaciones**:
 - No se puede registrar si el nivel ya tiene 5 lotes.
@@ -346,16 +340,17 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
 1. Desde la página de Requerimientos, haga clic en **"Atender"** junto a un requerimiento pendiente o parcial.
 2. Para cada insumo solicitado:
    - El sistema sugiere los lotes a despachar siguiendo el método **FEFO** (First Expiry, First Out — primero en vencer, primero en salir).
+   - Se muestra el stock disponible, la cantidad pendiente y las atenciones previas si las hay.
    - Ingrese la cantidad a despachar (no puede exceder el stock disponible ni la cantidad solicitada pendiente).
 3. Revise el resumen en el modal de confirmación.
-4. Haga clic en **"Confirmar despacho"**.
+4. Haga clic en **"Confirmar salidas"**.
 
 **Resultado esperado**:
-- El inventario se descuenta de los lotes correspondientes.
+- El inventario se descuenta de los lotes correspondientes (FEFO).
 - El requerimiento actualiza su estado:
   - **Atendido**: si se cubrió todo.
   - **Parcial**: si solo se cubrió parte.
-- Historial de atenciones registrado con fecha y responsable.
+- Historial de atenciones registrado con fecha, responsable y detalle en JSON.
 
 ---
 
@@ -363,10 +358,10 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
 
 **Roles**: Supervisor de Almacén
 
-**¿Qué hace?** Muestra las alertas generadas automáticamente cuando el stock de un insumo está por debajo de su punto de reorden.
+**¿Qué hace?** Muestra las alertas generadas automáticamente cuando el stock de un insumo está por debajo de su punto de reorden. Las alertas se calculan dinámicamente consultando la base de datos.
 
 **Pasos**:
-1. Haga clic en **"Alertas y Monitoreo"** en el menú lateral, o en el ícono de campana 🔔 en la barra superior.
+1. Haga clic en **"Alertas y Monitoreo"** en el menú lateral, o en el ícono de campana en la barra superior.
 2. Visualice la lista de insumos con stock bajo:
    - **Insumo**: Nombre del insumo.
    - **Stock actual**: Cantidad disponible.
@@ -391,16 +386,16 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
 1. Haga clic en **"Gestión de Usuarios"** en el menú lateral.
 2. Visualice la tabla de usuarios con nombre, correo, rol y estado.
 3. **Crear usuario**:
-   - Haga clic en **"Crear usuario"**.
+   - Haga clic en **"Nuevo Usuario"**.
    - Complete: nombre, correo, contraseña, confirmar contraseña, rol.
    - Haga clic en **"Crear usuario"**.
 4. **Editar usuario**:
-   - Haga clic en **"Editar"** junto al usuario.
+   - Haga clic en el ícono de lápiz junto al usuario.
    - Modifique nombre, rol y opcionalmente contraseña.
    - El correo no se puede cambiar.
    - Haga clic en **"Guardar cambios"**.
 5. **Desactivar usuario**:
-   - Haga clic en **"Desactivar"** junto al usuario activo.
+   - Haga clic en el ícono de power junto al usuario activo.
    - Confirme la desactivación. Si tiene tareas pendientes, el sistema lo advertirá.
 
 **Resultado esperado**: Usuario creado, editado o desactivado según la acción.
@@ -441,22 +436,17 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
 
 **Controles**:
 
-| Acción                | Mouse / Teclado                          |
-|-----------------------|------------------------------------------|
-| Rotar vista           | Clic + arrastrar                         |
-| Acercar/Alejar        | Rueda del mouse (scroll)                 |
-| Desplazar vista       | Clic derecho + arrastrar                 |
-| Navegar cursor        | Flechas ← → ↑ ↓ (pasillo/rack)          |
-| Subir/Bajar nivel     | Teclas W / S                             |
-| Seleccionar ubicación | Tecla Enter                              |
-| Restaurar cámara      | Tecla R o botón "Restaurar cámara"       |
+| Acción | Mouse / Teclado |
+|---|---|
+| Rotar vista | Clic + arrastrar |
+| Acercar/Alejar | Rueda del mouse (scroll) |
+| Desplazar vista | Clic derecho + arrastrar |
+| Navegar cursor | Flechas ← → ↑ ↓ (pasillo/rack) |
+| Subir/Bajar nivel | Teclas W / S |
+| Seleccionar ubicación | Tecla Enter |
+| Restaurar cámara | Tecla R o botón "Restaurar cámara" |
 
-**Al hacer clic en un lote**:
-- Se abre un panel con los detalles del lote (insumo, cantidad, vencimiento, ubicación, código).
-- El lote seleccionado se ilumina con un resplandor y gira lentamente.
-
-**Al pasar el cursor sobre un lote vacío (ubicación libre)**:
-- Se muestra un área dorada indicando que el espacio está disponible.
+**Al hacer clic en un lote**: Se abre un panel con los detalles del lote (insumo, cantidad, vencimiento, ubicación, código).
 
 **Barra de posición**: En la parte superior se muestra la posición actual del cursor (Pasillo, Rack, Nivel) y la ocupación (X/5 ocupados · Y libres).
 
@@ -468,19 +458,18 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
 
 ### Mensajes comunes
 
-| Mensaje                                 | Significado                                        | Qué hacer                              |
-|-----------------------------------------|----------------------------------------------------|----------------------------------------|
-| "Correo o contraseña incorrectos"       | Credenciales inválidas                             | Verifique sus datos e intente de nuevo |
-| "Cuenta desactivada"                    | Su usuario fue desactivado por el jefe             | Contacte al administrador              |
-| "Lote registrado exitosamente"          | Ingreso de lote completado                         | (correcto)                             |
-| "Insumo registrado"                     | Nuevo insumo agregado al catálogo                  | (correcto)                             |
-| "Requerimiento registrado"              | Nuevo requerimiento creado                         | (correcto)                             |
-| "Despacho registrado"                   | Atención de requerimiento completada               | (correcto)                             |
-| "Insumo editado correctamente"          | Cambios guardados en el catálogo                   | (correcto)                             |
-| "Usuario creado exitosamente"           | Nuevo usuario registrado                           | (correcto)                             |
-| "Este nivel ya tiene 5 lotes"           | La ubicación seleccionada está llena               | Seleccione otra ubicación              |
-| "El número de requerimiento ya existe"  | Número duplicado                                   | Use otro número                        |
-| "Completa todos los campos"             | Hay campos obligatorios vacíos                     | Revise y complete el formulario        |
+| Mensaje | Significado | Qué hacer |
+|---|---|---|
+| "Credenciales inválidas" | Correo o contraseña incorrectos | Verifique sus datos e intente de nuevo |
+| "Usuario inactivo" | Su cuenta fue desactivada por el jefe | Contacte al administrador |
+| "Lote registrado correctamente" | Ingreso de lote completado | (correcto) |
+| "Insumo registrado" | Nuevo insumo agregado al catálogo | (correcto) |
+| "Requerimiento registrado" | Nuevo requerimiento creado | (correcto) |
+| "Salidas registradas" | Atención de requerimiento completada | (correcto) |
+| "Usuario creado correctamente" | Nuevo usuario registrado | (correcto) |
+| "Este nivel ya tiene 5 lotes" | La ubicación seleccionada está llena | Seleccione otra ubicación |
+| "Este campo es obligatorio" | Hay campos obligatorios vacíos | Revise y complete el formulario |
+| "Error de conexión con el servidor" | El backend no está disponible | Verifique que el servidor esté corriendo |
 
 ### Errores frecuentes
 
@@ -496,6 +485,10 @@ Al iniciar sesión, se presenta una interfaz dividida en tres áreas principales
 3. **No veo todas las opciones del menú**:
    - Cada rol tiene acceso a funcionalidades específicas (ver mapa de navegación).
    - Si cree que le falta un permiso, contacte al jefe de almacén.
+
+4. **Error 500 al registrar**:
+   - El servidor backend puede tener un problema de conexión con la base de datos.
+   - Reporte el incidente al equipo de soporte.
 
 ---
 
@@ -521,36 +514,41 @@ En la Consulta de Inventario, al expandir los lotes de un insumo, las fechas de 
 **¿Puedo atender un requerimiento en varias veces?**
 Sí. El sistema soporta atención parcial. Cada vez que atiende, se registra la fecha, el responsable y las cantidades despachadas. El requerimiento cambia a estado "Parcial" hasta que se complete.
 
+**¿Qué significa "FEFO"?**
+First Expiry, First Out — el sistema sugiere automáticamente los lotes más próximos a vencer para ser despachados primero, minimizando pérdidas por vencimiento.
+
 ---
 
 ## 8. Glosario de Términos
 
-| Término                  | Definición                                                                 |
-|--------------------------|---------------------------------------------------------------------------|
-| **Almacén 3D**           | Visualización tridimensional del almacén con todos los racks y lotes.    |
-| **Badge**                | Etiqueta visual de estado (colores: verde, ámbar, rojo, azul).           |
-| **FEFO**                 | First Expiry, First Out — método de despacho que prioriza los lotes con vencimiento más cercano. |
-| **Insumo**               | Materia prima o material almacenado (ej: harina, aceite, sal).           |
-| **KPI**                  | Key Performance Indicator — indicador clave de rendimiento.              |
-| **Lead Time**            | Tiempo (en días) que tarda el proveedor en entregar un insumo.           |
-| **Lote**                 | Conjunto de unidades de un insumo con un mismo código, fecha de vencimiento y ubicación. |
-| **Pasillo**              | Corredor del almacén identificado con una letra (A–D).                  |
+| Término | Definición |
+|---|---|
+| **Almacén 3D** | Visualización tridimensional del almacén con todos los racks y lotes. |
+| **Badge** | Etiqueta visual de estado (colores: verde, ámbar, rojo, azul). |
+| **FEFO** | First Expiry, First Out — método de despacho que prioriza los lotes con vencimiento más cercano. |
+| **Insumo** | Materia prima o material almacenado (ej: harina, aceite, sal). |
+| **KPI** | Key Performance Indicator — indicador clave de rendimiento. |
+| **Lead Time** | Tiempo (en días) que tarda el proveedor en entregar un insumo. |
+| **Lote** | Conjunto de unidades de un insumo con un mismo código, fecha de vencimiento y ubicación. |
+| **Pasillo** | Corredor del almacén identificado con una letra (A–D). |
 | **Punto de Reorden (ROP)** | Cantidad mínima de stock que, al alcanzarse, dispara una alerta de reposición. |
-| **Rack**                 | Estantería numerada dentro de un pasillo (1–6).                         |
-| **Nivel**                | Altura dentro de un rack (1–5). Cada nivel puede albergar hasta 5 lotes. |
-| **Requerimiento**        | Solicitud de insumos realizada por producción.                          |
-| **Toast**                | Notificación temporal que aparece en la esquina superior derecha.       |
-| **Ubicación**            | Posición física en el almacén: Pasillo + Rack + Nivel.                  |
+| **Rack** | Estantería numerada dentro de un pasillo (1–6). |
+| **Nivel** | Altura dentro de un rack (1–5). Cada nivel puede albergar hasta 5 lotes. |
+| **Requerimiento** | Solicitud de insumos realizada por producción. |
+| **Toast** | Notificación temporal que aparece en la esquina superior derecha. |
+| **Ubicación** | Posición física en el almacén: Pasillo + Rack + Nivel. |
+| **API** | Interfaz de programación que permite la comunicación entre frontend y backend. |
+| **Backend** | Servidor que procesa la lógica de negocio y se conecta a la base de datos. |
 
 ---
 
 ## 9. Contacto para Soporte Técnico
 
-| Canal          | Detalle                          |
-|----------------|----------------------------------|
-| Correo         | [soporte@qorifoods.com]          |
-| Teléfono       | [+51 XXX XXX XXX]                |
-| Horarios       | Lunes a viernes, 8:00 a 18:00    |
+| Canal | Detalle |
+|---|---|
+| Correo | [soporte@qorifoods.com] |
+| Teléfono | [+51 XXX XXX XXX] |
+| Horarios | Lunes a viernes, 8:00 a 18:00 |
 
 Para reportar incidencias o solicitar mejoras, contacte al equipo de soporte indicando:
 - Su nombre de usuario.
