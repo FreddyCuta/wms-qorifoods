@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Boxes } from "lucide-react";
 import { useApp } from "../lib/store.jsx";
 import { ROLE_LABEL } from "../lib/types.js";
 import { AppShell } from "../components/app-shell.jsx";
@@ -10,7 +9,6 @@ export default function InicioPage() {
   const { currentUser } = useApp();
   if (!currentUser) return null;
   return (
-    // Home — AppShell sin allowedRoles porque todos entran, el contenido cambia según el rol
     <AppShell title="Inicio">
       {currentUser.role === "operario" ? (
         <OperarioDashboard />
@@ -23,7 +21,6 @@ export default function InicioPage() {
   );
 }
 
-// Tareas pendientes del usuario logueado — filtramos por assigneeId y status
 function MyPending() {
   const { currentUser, tasks } = useApp();
   const mine = tasks.filter((t) => t.assigneeId === currentUser?.id);
@@ -31,26 +28,20 @@ function MyPending() {
 
   return (
     <section>
-      <div className="mb-1 flex items-center gap-2">
-        <h2 className="text-base font-semibold text-foreground">
-          Mis Pendientes
-        </h2>
+      <div className="mb-2 flex items-center gap-2">
+        <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">Mis Pendientes</h2>
         <Badge color="amber">{pending.length}</Badge>
       </div>
-      <div className="divide-y divide-border rounded-lg border border-border bg-card px-4">
+      <div className="divide-y divide-[var(--border-subtle)]">
         {mine.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No tienes más tareas pendientes.
-          </p>
+          <p className="py-6 text-center text-[13px] text-[var(--text-tertiary)]">No tienes más tareas pendientes.</p>
         ) : (
           <>
             {mine.map((t) => (
               <TaskRow key={t.id} task={t} />
             ))}
             {pending.length === 0 && (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                No tienes más tareas pendientes.
-              </p>
+              <p className="py-6 text-center text-[13px] text-[var(--text-tertiary)]">No tienes más tareas pendientes.</p>
             )}
           </>
         )}
@@ -59,15 +50,12 @@ function MyPending() {
   );
 }
 
-// Dashboard del operario — solo ve sus tareas pendientes, nada más
 function OperarioDashboard() {
   const { currentUser } = useApp();
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-8 flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground">
-          Buenos días, {currentUser?.nombre}
-        </h1>
+      <div className="mb-4 flex items-center gap-3">
+        <h1 className="text-[18px] font-semibold text-[var(--text-primary)]">Buenos días, {currentUser?.nombre}</h1>
         <Badge color="gray">{ROLE_LABEL[currentUser.role]}</Badge>
       </div>
       <MyPending />
@@ -75,30 +63,25 @@ function OperarioDashboard() {
   );
 }
 
-// Dashboard del supervisor — sus pendientes más KPIs de alertas
 function SupervisorDashboard() {
   const { currentUser, activeAlertCount } = useApp();
   const navigate = useNavigate();
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-8 flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground">
-          Buenos días, {currentUser?.nombre}
-        </h1>
+      <div className="mb-4 flex items-center gap-3">
+        <h1 className="text-[18px] font-semibold text-[var(--text-primary)]">Buenos días, {currentUser?.nombre}</h1>
         <Badge color="amber">{ROLE_LABEL[currentUser.role]}</Badge>
       </div>
 
       <MyPending />
 
-      {/* Tarjeta de resumen — acceso rápido a alertas */}
-      <div className="mt-8 grid gap-3 sm:grid-cols-1">
-        <KpiWidget
-          icon={<AlertTriangle className="size-5 text-critical" />}
+      <div className="mt-4">
+        <KpiCard
           value={activeAlertCount}
-          valueColor="text-critical"
+          valueColor={activeAlertCount > 0 ? "text-[var(--danger)]" : "text-[var(--text-primary)]"}
           label="Alertas de reabastecimiento activas"
-          link="Ver alertas →"
+          link={activeAlertCount > 0 ? "Ver alertas" : undefined}
           onClick={() => navigate("/alertas")}
         />
       </div>
@@ -106,25 +89,20 @@ function SupervisorDashboard() {
   );
 }
 
-// Dashboard del jefe — visión general del inventario, nada operativo
 function JefeDashboard() {
   const { currentUser, inventory } = useApp();
   const lotes = inventory.length;
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-8 flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground">
-          Buenos días, {currentUser?.nombre}
-        </h1>
-        <Badge color="navy">{ROLE_LABEL[currentUser.role]}</Badge>
+      <div className="mb-4 flex items-center gap-3">
+        <h1 className="text-[18px] font-semibold text-[var(--text-primary)]">Buenos días, {currentUser?.nombre}</h1>
+        <Badge color="gray">{ROLE_LABEL[currentUser.role]}</Badge>
       </div>
 
-      <div className="mt-8">
-        <KpiWidget
-          icon={<Boxes className="size-5 text-success" />}
+      <div className="mt-4">
+        <KpiCard
           value={lotes}
-          valueColor="text-success"
           label="Lotes registrados en inventario"
         />
       </div>
@@ -132,27 +110,22 @@ function JefeDashboard() {
   );
 }
 
-function KpiWidget({ icon, value, valueColor, label, link, onClick }) {
+function KpiCard({ value, valueColor, label, link, onClick }) {
   return (
-    <div className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-4">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
-        {icon}
+    <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4 max-w-sm">
+      <div className={`text-[28px] font-bold leading-none ${valueColor || "text-[var(--text-primary)]"}`}>
+        {value}
       </div>
-      <div className="min-w-0 flex-1">
-        <div className={`text-2xl font-bold leading-none ${valueColor}`}>
-          {value}
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-        {link && (
-          <button
-            type="button"
-            onClick={onClick}
-            className="mt-1 text-xs font-medium text-primary hover:underline"
-          >
-            {link}
-          </button>
-        )}
-      </div>
+      <p className="mt-1 text-[12px] text-[var(--text-tertiary)]">{label}</p>
+      {link && (
+        <button
+          type="button"
+          onClick={onClick}
+          className="mt-1 text-[11px] font-medium text-[var(--accent)] hover:underline"
+        >
+          {link}
+        </button>
+      )}
     </div>
   );
 }

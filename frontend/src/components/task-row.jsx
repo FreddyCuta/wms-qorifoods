@@ -2,38 +2,36 @@ import { Check, Circle } from 'lucide-react'
 import { useApp } from '../lib/store.jsx'
 import { cn } from '../lib/utils.js'
 
-// Fila de una tarea pendiente. El botón circular hace toggle del estado completado/no completado.
-// Al marcarla como completada se tacha la descripción y se muestra visualmente el cambio.
 export function TaskRow({ task }) {
   const { completeTask } = useApp()
   const done = task.status === 'completada'
 
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div className="flex items-center gap-3 py-2.5">
       <button
         type="button"
         onClick={() => completeTask(task.id)}
         aria-label={done ? 'Desmarcar como completado' : 'Marcar como completado'}
         className={cn(
-          'flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors',
+          'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
           done
-            ? 'border-success bg-success text-white hover:border-success/60'
-            : 'border-muted-foreground/40 text-transparent hover:border-primary',
+            ? 'border-[var(--success)] bg-[var(--success)] text-white'
+            : 'border-[var(--text-tertiary)] text-transparent hover:border-[var(--accent)]',
         )}
       >
-        {done ? <Check className="size-3" /> : <Circle className="size-0" />}
+        {done ? <Check className="size-2.5" /> : <Circle className="size-0" />}
       </button>
 
       <p
         className={cn(
-          'flex-1 text-sm',
-          done ? 'text-muted-foreground line-through' : 'text-foreground',
+          'flex-1 text-[13px]',
+          done ? 'text-[var(--text-tertiary)] line-through' : 'text-[var(--text-primary)]',
         )}
       >
         {task.description}
       </p>
 
-      <span className="shrink-0 text-xs text-muted-foreground">{task.timestamp}</span>
+      <span className="shrink-0 text-[11px] text-[var(--text-tertiary)]">{task.timestamp}</span>
     </div>
   )
 }

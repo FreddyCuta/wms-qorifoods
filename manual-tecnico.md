@@ -2,12 +2,12 @@
 
 ## WMS Qori Foods — Sistema de Gestión de Almacén de Insumos
 
-|                 |                                         |
-|-----------------|-----------------------------------------|
+| | |
+|---|---|
 | **Nombre del sistema** | WMS Qori Foods — Almacén de Insumos |
-| **Versión**     | 1.0.0                                   |
-| **Fecha**       | Julio 2026                              |
-| **Equipo desarrollador** | [Nombre del equipo]                |
+| **Versión** | 1.0.0 |
+| **Fecha** | Julio 2026 |
+| **Equipo desarrollador** | [Nombre del equipo] |
 
 ---
 
@@ -15,7 +15,7 @@
 
 ### Objetivo del manual
 
-Este manual técnico está dirigido a desarrolladores, administradores de sistemas y personal de TI encargado de la instalación, configuración, mantenimiento y evolución del sistema WMS Qori Foods. Describe la arquitectura, las tecnologías empleadas, la estructura del código, la base de datos y los procedimientos operativos.
+Este manual técnico está dirigido a desarrolladores, administradores de sistemas y personal de TI encargado de la instalación, configuración, mantenimiento y evolución del sistema WMS Qori Foods. Describe la arquitectura, las tecnologías empleadas, la estructura del código, la base de datos, la API REST y los procedimientos operativos.
 
 ### Audiencia técnica
 
@@ -29,14 +29,13 @@ Este manual técnico está dirigido a desarrolladores, administradores de sistem
 WMS Qori Foods es un sistema web de gestión de almacenes (WMS) para el control de materias primas. Sus funciones principales son:
 
 - Registro de ingreso de lotes de insumos.
-- Gestión de requerimientos de producción (alta, atención parcial, historial).
+- Gestión de requerimientos de producción (alta, atención parcial con FEFO, historial).
 - Consulta de inventario en tiempo real con filtros multidimensionales.
 - Visualización 3D del almacén con navegación por teclado y ratón.
-- Dashboard ejecutivo con indicadores KPI.
+- Dashboard ejecutivo con indicadores KPI calculados desde la BD.
 - Gestión de usuarios, roles y permisos.
 - Asignación de tareas al personal.
-- Alertas automáticas de stock bajo.
-- Catálogo de insumos con proveedores y puntos de reorden.
+- Alertas automáticas de stock bajo (cálculo dinámico contra punto de reorden).
 
 ---
 
@@ -56,63 +55,68 @@ WMS Qori Foods es un sistema web de gestión de almacenes (WMS) para el control 
 │  │  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘  │  │
 │  │                     │                                           │  │
 │  │              ┌──────▼──────┐                                    │  │
-│  │              │  Axios (API)│  <── Pendiente de conexión         │  │
-│  │              └─────────────┘                                    │  │
-│  └────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────┬───────────────────────────────────────────┘
-                           │  HTTP / HTTPS
-                           │
-┌──────────────────────────▼───────────────────────────────────────────┐
-│                    SERVIDOR (Futura implementación)                   │
-│  ┌────────────────────────────────────────────────────────────────┐  │
-│  │              Backend (Express + Node.js)                       │  │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐                       │  │
-│  │  │  Routes  │ │Middleware│ │ Services │                       │  │
-│  │  └──────────┘ └──────────┘ └──────────┘                       │  │
-│  │                     │                                           │  │
-│  │              ┌──────▼──────┐                                    │  │
-│  │              │    ORM      │                                    │  │
-│  │              └─────────────┘                                    │  │
-│  └────────────────────────────────────────────────────────────────┘  │
-│                           │                                           │
-│  ┌────────────────────────▼───────────────────────────────────────┐  │
-│  │                    PostgreSQL 15+                              │  │
-│  │   10 tablas: usuarios, insumos, ubicaciones, lotes_inventario, │  │
-│  │   requerimientos, requerimiento_insumos, requerimiento_        │  │
-│  │   atenciones, tareas, alertas_atendidas                        │  │
-│  └────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────┘
+│  │              │  Axios HTTP │── ── ── ── ── ── ── ── ── ─┐     │  │
+│  │              └─────────────┘                               │     │  │
+│  └────────────────────────────────────────────────────────────┘     │  │
+└──────────────────────────────────────────────────────────────────┼──┘  │
+                                                                   │     │
+┌──────────────────────────────────────────────────────────────────▼──┐  │
+│                    SERVIDOR (Express + Node.js)                      │  │
+│  ┌────────────────────────────────────────────────────────────────┐  │  │
+│  │              Backend (API REST — 9 módulos de rutas)           │  │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐     │  │  │
+│  │  │  Auth    │ │ Insumos  │ │  Lotes   │ │ Requerimientos│     │  │  │
+│  │  └──────────┘ └──────────┘ └──────────┘ └───────────────┘     │  │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐     │  │  │
+│  │  │Usuarios  │ │  Tareas  │ │ Alertas  │ │ Dashboard     │     │  │  │
+│  │  └──────────┘ └──────────┘ └──────────┘ └───────────────┘     │  │  │
+│  │  ┌────────────────────────────────────────────────────────┐   │  │  │
+│  │  │              Ubicaciones                               │   │  │  │
+│  │  └────────────────────────────────────────────────────────┘   │  │  │
+│  │                     │                                           │  │  │
+│  │              ┌──────▼──────┐                                    │  │  │
+│  │              │  PostgreSQL  │──────── DATABASE_URL ────────────│  │  │
+│  │              │  (pg Pool)   │                                    │  │  │
+│  │              └─────────────┘                                    │  │  │
+│  └────────────────────────────────────────────────────────────────┘  │  │
+└──────────────────────────────────────────────────────────────────────┘  │
 ```
 
 ### Componentes principales
 
-| Componente    | Tecnología        | Descripción                                              |
-|---------------|-------------------|----------------------------------------------------------|
-| **Frontend**  | React 19 + Vite 8 | Interfaz de usuario SPA (Single Page Application).       |
-| **Estado**    | React Context     | Gestión de estado global con `useState` + `useCallback`. |
-| **3D**        | Three.js + R3F    | Visualización tridimensional del almacén.                |
-| **API**       | Axios             | Cliente HTTP (pendiente de conectar al backend).         |
-| **Backend**   | Node.js + Express | (Futura implementación) API REST.                        |
-| **Base de datos** | PostgreSQL 15+ | Base de datos relacional.                                |
+| Componente | Tecnología | Descripción |
+|---|---|---|
+| **Frontend** | React 19 + Vite 8 | Interfaz de usuario SPA (Single Page Application). |
+| **Estado** | React Context | Gestión de estado global con `useState` + `useCallback`. |
+| **3D** | Three.js + R3F + Drei | Visualización tridimensional del almacén. |
+| **API Client** | Axios | Cliente HTTP con interceptor de transformación snake_case↔camelCase. |
+| **Backend** | Node.js + Express 5 | API REST con 9 módulos de rutas y middleware de errores. |
+| **Base de datos** | PostgreSQL 15+ | Motor relacional con `pg` (node-postgres) Pool connection. |
 
 ### Tecnologías utilizadas
 
-| Categoría       | Tecnología                      | Versión   |
-|-----------------|---------------------------------|-----------|
-| Lenguaje        | JavaScript (ES2022+)            | —         |
-| UI Framework    | React                           | ^19.2.6   |
-| Router          | React Router DOM                | ^7.17.0   |
-| Build Tool      | Vite                            | ^8.0.12   |
-| CSS Framework   | Tailwind CSS                    | ^4.3.0    |
-| 3D Engine       | Three.js                        | ^0.184.0  |
-| React 3D        | @react-three/fiber              | ^9.6.1    |
-| Drei (helpers)  | @react-three/drei               | ^10.7.7   |
-| Iconos          | Lucide React                    | ^1.17.0   |
-| Utilidades CSS  | clsx + tailwind-merge           | ^2.1.1 / ^3.6.0 |
-| HTTP Client     | Axios                           | ^1.17.0   |
-| Animaciones CSS | tw-animate-css                  | ^1.4.0    |
-| Base de datos   | PostgreSQL                      | 15+       |
-| Backend         | (Futuro) Node.js + Express      | —         |
+| Categoría | Tecnología | Versión |
+|---|---|---|
+| Lenguaje (Frontend) | JavaScript (ES2022+) | — |
+| UI Framework | React | ^19.2.6 |
+| Router | React Router DOM | ^7.17.0 |
+| Build Tool | Vite | ^8.0.12 |
+| CSS Framework | Tailwind CSS | ^4.3.0 |
+| 3D Engine | Three.js | ^0.184.0 |
+| React 3D | @react-three/fiber | ^9.6.1 |
+| Drei (helpers) | @react-three/drei | ^10.7.7 |
+| Iconos | Lucide React | ^1.17.0 |
+| Utilidades CSS | clsx + tailwind-merge | ^2.1.1 / ^3.6.0 |
+| HTTP Client | Axios | ^1.17.0 |
+| Animaciones CSS | tw-animate-css | ^1.4.0 |
+| **Lenguaje (Backend)** | **Node.js (CommonJS)** | **20.x LTS** |
+| **Framework Backend** | **Express** | **^5.2.1** |
+| **Cliente PostgreSQL** | **pg (node-postgres)** | **^8.21.0** |
+| **CORS** | **cors** | **^2.8.6** |
+| **Variables de entorno** | **dotenv** | **^17.4.2** |
+| **Dev Server (Backend)** | **nodemon** | **^3.1.14** |
+| Base de datos | PostgreSQL | 15+ |
+| Linter | ESLint | ^10.3.0 |
 
 ---
 
@@ -120,19 +124,23 @@ WMS Qori Foods es un sistema web de gestión de almacenes (WMS) para el control 
 
 ### Requisitos del servidor (desarrollo)
 
-| Componente       | Especificación mínima           |
-|------------------|---------------------------------|
-| Procesador       | 2.0 GHz dual-core               |
-| Memoria RAM      | 8 GB                            |
-| Espacio en disco | 2 GB                            |
-| Node.js          | 20.x LTS o superior             |
-| npm              | 10.x o superior                 |
-| Git              | 2.x                             |
+| Componente | Especificación mínima |
+|---|---|
+| Procesador | 2.0 GHz dual-core |
+| Memoria RAM | 8 GB |
+| Espacio en disco | 2 GB |
+| Node.js | 20.x LTS o superior |
+| npm | 10.x o superior |
+| Git | 2.x |
+| PostgreSQL | 15+ |
+| Navegador | Chrome 120+, Firefox 120+, Edge 120+ |
 
 ### Dependencias y librerías necesarias
 
-- **Node.js** + **npm**: Plataforma de ejecución y gestor de paquetes.
+- **Node.js + npm**: Plataforma de ejecución y gestor de paquetes.
 - **Git**: Control de versiones.
+- **PostgreSQL 15+**: Motor de base de datos relacional.
+- **pgAdmin** (opcional): Cliente gráfico para administrar la BD.
 
 ### Pasos para la instalación local
 
@@ -145,22 +153,42 @@ cd wms-qorifoods
 cd frontend
 npm install
 
-# 3. Ejecutar en modo desarrollo
+# 3. Instalar dependencias del backend
+cd ../backend
+npm install
+
+# 4. Configurar base de datos PostgreSQL
+#    - Crear la base de datos "wms_db"
+#    - Editar backend/.env con sus credenciales:
+#      PORT=3000
+#      DATABASE_URL=postgresql://usuario:password@localhost:5432/wms_db
+
+# 5. Ejecutar el script de base de datos
+psql -U postgres -d wms_db -f ../database/db.sql
+
+# 6. Iniciar el backend (en una terminal)
 npm run dev
+#    Servidor en http://localhost:3000
 
-# 4. Para generar la build de producción
+# 7. Iniciar el frontend (en otra terminal)
+cd ../frontend
+npm run dev
+#    Servidor en http://localhost:5173
+```
+
+### Variables de entorno (backend/.env)
+
+```
+PORT=3000
+DATABASE_URL=postgresql://postgres:password@localhost:5432/wms_db
+```
+
+### Build de producción
+
+```bash
+cd frontend
 npm run build
-
-# 5. Para previsualizar la build
 npm run preview
-```
-
-### Variables de entorno
-
-Actualmente el frontend funciona con datos mock (sin backend). Cuando se implemente el backend, se deberá crear un archivo `.env` en la raíz de `frontend/`:
-
-```
-VITE_API_URL=http://localhost:3000/api
 ```
 
 ---
@@ -169,45 +197,62 @@ VITE_API_URL=http://localhost:3000/api
 
 ### Herramientas necesarias
 
-| Herramienta        | Propósito                              |
-|--------------------|----------------------------------------|
-| VS Code            | IDE recomendado                        |
-| ESLint             | Linter de código (incluido)            |
-| React DevTools     | Depuración de componentes React        |
-| Three.js DevTools  | Depuración de escenas 3D (opcional)    |
-| PostgreSQL (futuro)| Cliente de base de datos               |
+| Herramienta | Propósito |
+|---|---|
+| VS Code | IDE recomendado |
+| ESLint | Linter de código (incluido en frontend) |
+| React DevTools | Depuración de componentes React |
+| Three.js DevTools | Depuración de escenas 3D (opcional) |
+| PostgreSQL / pgAdmin | Cliente de base de datos |
+| Postman / Insomnia | Pruebas de API REST (opcional) |
+| nodemon | Recarga automática del backend en desarrollo |
 
 ### Estructura de carpetas del proyecto
 
 ```
 wms-qorifoods/
 │
-├── database/                          # Esquema de base de datos
-│   └── db.sql                         # DDL completo (10 tablas + secuencias + seed)
+├── database/
+│   └── db.sql                         # DDL completo (10 tablas + secuencias + seed data)
 │
-├── frontend/                          # Aplicación frontend
-│   ├── public/                        # Archivos estáticos
+├── backend/                           # API REST
+│   ├── .env                           # Configuración (PORT, DATABASE_URL)
+│   ├── package.json
+│   └── src/
+│       ├── index.js                   # Entry point del servidor Express
+│       ├── db.js                      # Pool de conexión PostgreSQL
+│       ├── middleware/
+│       │   └── error-handler.js       # Manejador global de errores
+│       └── routes/                    # 9 módulos de rutas
+│           ├── auth.routes.js
+│           ├── insumos.routes.js
+│           ├── lotes.routes.js
+│           ├── requerimientos.routes.js
+│           ├── usuarios.routes.js
+│           ├── tareas.routes.js
+│           ├── alertas.routes.js
+│           ├── dashboard.routes.js
+│           └── ubicaciones.routes.js
+│
+├── frontend/                          # Aplicación frontend SPA
+│   ├── public/
 │   │   ├── favicon.svg
 │   │   ├── icons.svg
 │   │   └── images/
 │   │       └── LOGO-QORI.png
-│   │
 │   ├── src/
-│   │   ├── main.jsx                   # Entry point
+│   │   ├── main.jsx                   # Entry point React
 │   │   ├── App.jsx                    # Router + Provider
-│   │   ├── index.css                  # Estilos globales + tema Tailwind v4
-│   │   │
-│   │   ├── images/
-│   │   │   └── LOGO-QORI.png
-│   │   │
+│   │   ├── index.css                  # Tailwind v4 theme + tokens
+│   │   ├── images/LOGO-QORI.png
 │   │   ├── lib/                       # Lógica compartida
-│   │   │   ├── data.js                # Datos mock (usuarios, insumos, inventario, etc.)
+│   │   │   ├── api.js                 # Cliente Axios + 18 funciones API
+│   │   │   ├── data.js                # Datos semilla (fallback)
 │   │   │   ├── store.jsx              # Estado global (Context API)
-│   │   │   ├── nav.js                 # Configuración de navegación por rol
+│   │   │   ├── nav.js                 # Navegación por rol
 │   │   │   ├── types.js               # Constantes de roles
-│   │   │   └── utils.js               # Utilidades (formatos, fechas, mapeo insumo)
-│   │   │
-│   │   ├── pages/                     # Páginas del sistema (rutas)
+│   │   │   └── utils.js               # Utilidades (formatos, fechas)
+│   │   ├── pages/                     # 13 páginas (rutas)
 │   │   │   ├── login.jsx
 │   │   │   ├── inicio.jsx
 │   │   │   ├── ingreso.jsx
@@ -221,47 +266,42 @@ wms-qorifoods/
 │   │   │   ├── insumos-registro.jsx
 │   │   │   ├── almacen-3d.jsx
 │   │   │   └── dashboard.jsx
-│   │   │
 │   │   └── components/                # Componentes reutilizables
-│   │       ├── app-shell.jsx           # Layout principal
-│   │       ├── sidebar.jsx             # Menú lateral
-│   │       ├── topbar.jsx              # Barra superior
-│   │       ├── task-row.jsx            # Fila de tarea
-│   │       ├── toast-container.jsx     # Contenedor de notificaciones
-│   │       │
-│   │       ├── ui/                     # Componentes UI atómicos
-│   │       │   ├── action-button.jsx
-│   │       │   ├── form-field.jsx      # Field, TextInput, SelectInput, TextArea
-│   │       │   ├── modal.jsx
-│   │       │   └── status-badge.jsx
-│   │       │
-│   │       └── warehouse-3d/           # Componentes de visualización 3D
-│   │           ├── warehouse-scene.jsx  # Escena Three.js
-│   │           └── warehouse-panel.jsx  # Panel envolvente con UI overlay
-│   │
+│   │       ├── app-shell.jsx
+│   │       ├── sidebar.jsx
+│   │       ├── topbar.jsx
+│   │       ├── task-row.jsx
+│   │       ├── toast-container.jsx
+│   │       ├── ui/ (action-button, form-field, modal, status-badge)
+│   │       └── warehouse-3d/ (warehouse-scene, warehouse-panel)
 │   ├── package.json
 │   ├── vite.config.js
 │   ├── eslint.config.js
-│   ├── index.html
-│   └── .gitignore
+│   └── index.html
 │
-├── manual-de-usuario.md                # Manual de usuario
-├── manual-tecnico.md                   # Manual técnico
-└── documentacion-final.md              # Documentación final del proyecto
+├── manual-de-usuario.md
+├── manual-tecnico.md
+└── documentacion-final.md
 ```
 
 ### Cómo ejecutar el sistema en modo desarrollo
 
 ```bash
+# Terminal 1 — Backend
+cd backend
+npm run dev
+
+# Terminal 2 — Frontend
 cd frontend
 npm run dev
 ```
 
-El servidor de desarrollo se iniciará en `http://localhost:5173` (o el puerto disponible).
+Frontend: `http://localhost:5173` · Backend: `http://localhost:3000`
 
 ### Lint del código
 
 ```bash
+cd frontend
 npm run lint
 ```
 
@@ -271,7 +311,15 @@ npm run lint
 
 ### Motor de base de datos
 
-PostgreSQL 15+ con extensión `pgcrypto` para generación de UUIDs.
+PostgreSQL 15+. La conexión se realiza mediante `pg.Pool` con una URL de conexión definida en variables de entorno.
+
+**Archivo de conexión** (`backend/src/db.js`):
+```javascript
+const { Pool } = require('pg');
+require('dotenv').config();
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+module.exports = pool;
+```
 
 ### Modelo entidad-relación
 
@@ -282,11 +330,10 @@ PostgreSQL 15+ con extensión `pgcrypto` para generación de UUIDs.
 │ id (PK)      │     │ id (PK)          │     │ id (PK)          │
 │ nombre       │     │ nombre (UNIQUE)  │     │ pasillo (A-D)    │
 │ email (UQ)   │     │ proveedor        │     │ rack (1-6)       │
-│ password_hash│     │ unidad (kg/L)    │     │ nivel (1-5)      │
+│ password     │     │ unidad (kg/L)    │     │ nivel (1-5)      │
 │ rol          │     │ punto_reorden    │     │ UNIQUE(p,r,n)    │
 │ activo       │     │ lead_time        │     └──────────────────┘
 └──────┬───────┘     └──────────────────┘              │
-       │                   │                           │
        │                   │                           │
        │    ┌──────────────▼───────────────────────────┼──────────┐
        │    │           lotes_inventario               │          │
@@ -294,14 +341,14 @@ PostgreSQL 15+ con extensión `pgcrypto` para generación de UUIDs.
        │    │ id (PK)                                  │          │
        ├────┤ insumo_id (FK → insumos)                 │          │
        │    │ codigo_lote (UQ, auto-generado)          │          │
-       │    │ cantidad                                  │          │
-       │    │ cantidad_inicial                         │          │
-       │    │ vencimiento                              │          │
+       │    │ cantidad (CHECK >= 0)                    │          │
+       │    │ cantidad_inicial (CHECK > 0)             │          │
+       │    │ vencimiento (DATE)                       │          │
        └────┤ ubicacion_id (FK → ubicaciones)          ◄─────────┘
             │ proveedor                                │
-            │ fecha_ingreso                            │
+            │ fecha_ingreso (DEFAULT NOW())            │
             │ registrado_por_id (FK → usuarios)        │
-            │ estado (generado: disponible/bajo/agotado)│
+            │ estado (GENERATED ALWAYS AS ... STORED)  │
             └──────────────────────────────────────────┘
 
 
@@ -311,9 +358,9 @@ PostgreSQL 15+ con extensión `pgcrypto` para generación de UUIDs.
 │ id (PK)          │     │ id (PK)                   │
 │ numero (UNIQUE)  │     │ requerimiento_id (FK)     │
 │ fecha_solicitud  │◄────│ insumo_id (FK → insumos)  │
-│ fecha_registro   │     │ cantidad                  │
-│ estado           │     │ unidad                    │
-│ registrado_por_id│     │ atendido                  │
+│ fecha_registro   │     │ cantidad (CHECK > 0)      │
+│ estado (CHECK)   │     │ unidad                    │
+│ registrado_por_id│     │ atendido (DEFAULT 0)      │
 └──────────────────┘     │ stock_snapshot            │
          │               └───────────────────────────┘
          │
@@ -321,8 +368,8 @@ PostgreSQL 15+ con extensión `pgcrypto` para generación de UUIDs.
          │    │ requerimiento_atenciones  │
          │    ├───────────────────────────┤
          └────┤ requerimiento_id (FK)     │
-              │ fecha                     │
-              │ atendido_por_id (FK → usuarios)
+              │ fecha (DEFAULT NOW())     │
+              │ atendido_por_id (FK)      │
               │ detalle (JSONB)           │
               └───────────────────────────┘
 
@@ -331,40 +378,41 @@ PostgreSQL 15+ con extensión `pgcrypto` para generación de UUIDs.
 ├──────────────┤     ├───────────────────────┤
 │ id (PK)      │     │ id (PK)               │
 │ asignado_a_id│     │ insumo_id (FK)        │
-│ descripcion  │     │ fecha                 │
-│ estado       │     │ atendido_por_id (FK)  │
+│ descripcion  │     │ fecha (DEFAULT NOW()) │
+│ estado (CHECK)│    │ atendido_por_id (FK)  │
 │ creada_en    │     └───────────────────────┘
 └──────────────┘
 ```
 
-### Script de creación (database/db.sql)
+### Script de creación (`database/db.sql`)
 
-El archivo `database/db.sql` contiene el DDL completo con las siguientes características:
+El archivo `database/db.sql` contiene:
 
-- **Generación de UUIDs**: `gen_random_uuid()` de la extensión `pgcrypto`.
-- **Columna generada**: `lotes_inventario.estado` es una columna `GENERATED ALWAYS AS ... STORED` que calcula automáticamente el estado del lote (`disponible`, `bajo`, `agotado`) según `cantidad` vs `cantidad_inicial * 0.3`.
-- **Secuencia**: `lote_codigo_seq` para generar códigos de lote auto-incrementales (formato: `LOT-YYYY-NNNN`).
-- **Seed data**: 120 ubicaciones generadas con `GENERATE_SERIES` + `CROSS JOIN`.
-- **Restricciones**: `CHECK` en campos críticos (rol, unidad, rango numérico de rack/nivel, etc.).
-- **Índices**: En columnas de búsqueda frecuente (`insumo_id`, `ubicacion_id`, `vencimiento`, `requerimiento_id`, `asignado_a_id`).
+- **10 tablas**: `usuarios`, `insumos`, `ubicaciones`, `lotes_inventario`, `requerimientos`, `requerimiento_insumos`, `requerimiento_atenciones`, `tareas`, `alertas_atendidas`
+- **Secuencia**: `lote_codigo_seq` para códigos auto-incrementales (`LOT-YYYY-NNNN`)
+- **Columna generada**: `lotes_inventario.estado` — `GENERATED ALWAYS AS ... STORED` que calcula automáticamente el estado (`disponible`, `bajo`, `agotado`) según `cantidad ≤ cantidad_inicial * 0.3`
+- **Restricciones**: `CHECK` en `rol` (jefe/supervisor/operario), `unidad` (kg/L), rango rack (1-6), nivel (1-5), cantidad > 0, estado de requerimiento (pendiente/parcial/atendido), estado de tarea (pendiente/completada)
+- **Índices**: En `insumo_id`, `ubicacion_id`, `vencimiento`, `requerimiento_id`, `asignado_a_id`
+- **Seed data**: 3 usuarios, 10 insumos, 120 ubicaciones (GENERATE_SERIES), 30 lotes, 7 requerimientos con sus insumos y atenciones, 2 alertas atendidas, 10 tareas
 
 ### Estrategia de respaldo y recuperación
 
-Se recomienda:
-
 ```bash
 # Respaldo completo
-pg_dump -U <user> -h <host> -d wms_qori > backup_$(date +%Y%m%d).sql
+pg_dump -U postgres -h localhost -d wms_db > backup_$(date +%Y%m%d).sql
 
 # Restauración
-psql -U <user> -h <host> -d wms_qori < backup_20260701.sql
+psql -U postgres -d wms_db < backup_20260701.sql
+
+# Restauración desde cero (recrear todo)
+psql -U postgres -d wms_db -f database/db.sql
 ```
 
 ---
 
 ## 6. Código Fuente
 
-### Estructura del código (Frontend)
+### 6.1 Frontend
 
 #### Entry point: `src/main.jsx`
 
@@ -383,156 +431,228 @@ createRoot(document.getElementById('root')).render(
 
 #### Router principal: `src/App.jsx`
 
-Define 13 rutas protegidas por `PrivateRoute` (redirige al login si no hay sesión). El layout general es:
+Define 13 rutas protegidas por `PrivateRoute` (redirige al login si no hay sesión). El layout general:
 
 ```
-AppProvider (Context) → BrowserRouter → Routes → AppRoutes
+AppProvider (Context) → BrowserRouter → Routes → PrivateRoute → Page
 ```
 
-Cada ruta renderiza un Page component envuelto en `PrivateRoute`.
+#### Cliente HTTP: `src/lib/api.js`
+
+Cliente Axios con `baseURL: http://localhost:3000/api`. Incluye:
+
+- **`FIELD_MAP`**: Transformación de snake_case a camelCase para todos los campos de la API.
+- **`NUMERIC_KEYS`**: Conversión automática a Number para campos como `cantidad`, `stock`, `atendido`.
+- **Interceptor de respuesta**: Transforma automáticamente todos los datos entrantes.
+- **18 funciones exportadas**: `login`, `getInsumos`, `createInsumo`, `updateInsumo`, `getLotes`, `createLote`, `getRequerimientos`, `getRequerimiento`, `createRequerimiento`, `atenderRequerimiento`, `getUsuarios`, `createUsuario`, `updateUsuario`, `toggleUsuarioActive`, `getTareas`, `createTarea`, `toggleTarea`, `getAlertas`, `atenderAlerta`, `getDashboard`, `getUbicaciones`.
 
 #### Gestión de estado global: `src/lib/store.jsx`
 
 Patrón **React Context + hooks**. Expone un `AppProvider` y un hook `useApp()`.
 
-**Estado** (8 variables con `useState`):
-| Variable        | Tipo          | Inicialización        |
-|-----------------|---------------|-----------------------|
-| `currentUser`   | object\|null  | `null`                |
-| `users`         | array         | `USERS` (mock)        |
-| `inventory`     | array         | `INVENTORY` (mock)    |
-| `insumos`       | array         | `INSUMOS` (mock)      |
-| `requirements`  | array         | `REQUIREMENTS` (mock) |
-| `tasks`         | array         | `TASKS` (mock)        |
-| `attendedAlerts`| object        | `{}`                  |
-| `toasts`        | array         | `[]`                  |
+**Estado** (9 variables con `useState`): `currentUser`, `users`, `inventory`, `insumos`, `requirements`, `tasks`, `alerts`, `ubicaciones`, `toasts`.
 
-**Acciones expuestas** (13 funciones):
-- Sesión: `login`, `logout`
-- Toast: `addToast`, `dismissToast`
-- Tareas: `completeTask`, `assignTask`
-- Requerimientos: `attendRequirement`, `addRequirement`
-- Alertas: `attendAlert` (alerta dinámica computada con `useMemo`)
-- Usuarios: `toggleUserActive`, `addUser`, `updateUser`
-- Insumos: `addInsumo`, `updateInsumo`
-- Inventario: `addLot`
+**Acciones** (14 funciones con `useCallback`): `login`, `logout`, `loadAll`, `addToast`, `dismissToast`, `completeTask`, `assignTask`, `attendRequirement`, `addRequirement`, `attendAlert`, `toggleUserActive`, `addUser`, `updateUser`, `addLot`, `addInsumo`, `updateInsumo`.
 
-**Estado derivado** (3 valores computados con `useMemo`):
-- `alerts`: cruza inventario vs punto de reorden de cada insumo.
-- `activeAlertCount`: alertas no atendidas.
-- `pendingReqCount`: requerimientos con estado "pendiente".
+**Estado derivado** (2 valores con `useMemo`):
+- `activeAlertCount`: Alertas donde `!a.atendidaId`.
+- `pendingReqCount`: Requerimientos con estado `"pendiente"`.
 
 #### Sistema de rutas: `src/lib/nav.js`
 
-Define 10 ítems de navegación con etiquetas, rutas e íconos Lucide. La navegación visible se filtra por rol:
+Define 10 ítems de navegación con etiquetas, rutas e íconos Lucide. Filtrado por rol:
 
-| Rol         | Ítems visibles                                              |
-|-------------|-------------------------------------------------------------|
-| `jefe`      | Inicio, Dashboard, Insumos, Inventario, 3D, Usuarios, Tareas |
-| `supervisor`| Inicio, Requerimientos, Inventario, 3D, Alertas              |
-| `operario`  | Inicio, Ingreso, Requerimientos, Inventario, 3D              |
+| Rol | Ítems visibles |
+|---|---|
+| `jefe` | Inicio, Dashboard, Insumos, Inventario, 3D, Usuarios, Tareas |
+| `supervisor` | Inicio, Requerimientos, Inventario, 3D, Alertas |
+| `operario` | Inicio, Ingreso, Requerimientos, Inventario, 3D |
 
-#### Utilidades: `src/lib/utils.js`
+#### Páginas del sistema
 
-| Función       | Descripción                                          |
-|---------------|------------------------------------------------------|
-| `cn(...)`     | Combina clases Tailwind con resolución de conflictos |
-| `fmt(n)`      | Formato numérico con locale `es-PE`                  |
-| `qty(n, unit)`| Formato "cantidad + unidad"                          |
-| `parseDate(d)`| Parsea fecha "DD/MM/YYYY" → Date                    |
-| `daysUntil(d, from?)` | Días hasta una fecha                          |
-| `initInsumoMap(i)` | Inicializa mapas bidireccionales nombre↔ID       |
-| `insumoId(nombre)`   | Lookup de ID por nombre de insumo               |
-| `insumoName(id)`     | Lookup de nombre por ID de insumo               |
+| Archivo | Propósito | Rol |
+|---|---|---|
+| `login.jsx` | Autenticación de usuarios contra API | Público |
+| `inicio.jsx` | Home role-based con tareas pendientes, KPIs | Todos |
+| `ingreso.jsx` | Registro de lote con selector 3D o dropdown | Operario |
+| `inventario.jsx` | Consulta con 5 filtros + panel lateral de lotes | Todos |
+| `requerimientos.jsx` | Lista de requerimientos con acciones por rol | Sup., Oper. |
+| `nuevo-requerimiento.jsx` | Formulario con filas dinámicas | Supervisor |
+| `atender-requerimiento.jsx` | Despacho FEFO con atención parcial e historial | Operario |
+| `alertas.jsx` | Alertas de stock bajo con atención | Supervisor |
+| `usuarios.jsx` | CRUD de usuarios (3 modales) | Jefe |
+| `responsabilidades.jsx` | Asignación de tareas con panel lateral | Jefe |
+| `insumos-registro.jsx` | CRUD de catálogo de insumos | Jefe |
+| `almacen-3d.jsx` | Visualización 3D full-screen | Todos |
+| `dashboard.jsx` | Dashboard ejecutivo con KPIs y tablas | Jefe |
 
-### Descripción de módulos clave
+### 6.2 Backend
 
-#### Páginas (Pages)
+#### Entry point: `backend/src/index.js`
 
-| Archivo                        | Propósito                                              | Rol              |
-|--------------------------------|--------------------------------------------------------|------------------|
-| `login.jsx`                    | Autenticación de usuarios contra mock DB               | Público          |
-| `inicio.jsx`                   | Home role-based con tareas pendientes, KPIs            | Todos            |
-| `ingreso.jsx`                  | Registro de lote con selector de ubicación (3D o dropdown) | Operario      |
-| `inventario.jsx`               | Consulta con filtros por insumo, pasillo, rack, nivel, estado | Todos        |
-| `requerimientos.jsx`           | Lista de requerimientos con acciones                   | Sup., Oper.      |
-| `nuevo-requerimiento.jsx`      | Formulario de creación con filas dinámicas             | Supervisor       |
-| `atender-requerimiento.jsx`    | Despacho FEFO con atención parcial                     | Operario         |
-| `alertas.jsx`                  | Alertas de stock bajo con atención                     | Supervisor       |
-| `usuarios.jsx`                 | CRUD de usuarios (crear, editar, desactivar)           | Jefe             |
-| `responsabilidades.jsx`        | Asignación de tareas al personal                       | Jefe             |
-| `insumos-registro.jsx`         | CRUD de catálogo de insumos                            | Jefe             |
-| `almacen-3d.jsx`               | Visualización 3D full-screen con panel de información  | Todos            |
-| `dashboard.jsx`                | Dashboard ejecutivo con KPIs, tablas y gráficos        | Jefe             |
+Servidor Express que:
+1. Configura CORS y parsing JSON.
+2. Monta 9 grupos de rutas bajo `/api/*`.
+3. Incluye middleware de manejo global de errores.
+4. Endpoint raíz (`GET /`) con health check que verifica conexión a BD.
+5. Escucha en puerto `3000` (configurable vía `PORT`).
 
-#### Componentes UI (ui/)
+#### Conexión a BD: `backend/src/db.js`
 
-| Componente       | Archivo               | Props                              |
-|------------------|-----------------------|------------------------------------|
-| `ActionButton`   | `action-button.jsx`   | `variant?`, `fullWidth?`, `className?` |
-| `Field`          | `form-field.jsx`      | `label`, `error?`, `children`      |
-| `TextInput`      | `form-field.jsx`      | `invalid?`, `className?`           |
-| `SelectInput`    | `form-field.jsx`      | `invalid?`, `className?`, `children`|
-| `TextArea`       | `form-field.jsx`      | `invalid?`, `className?`           |
-| `Modal`          | `modal.jsx`           | `open`, `onClose`, `title`, `children` |
-| `ModalFooter`    | `modal.jsx`           | `children`                         |
-| `Badge`          | `status-badge.jsx`    | `color?`, `children`, `className?` |
+```javascript
+const { Pool } = require('pg');
+require('dotenv').config();
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+module.exports = pool;
+```
 
-#### Componentes 3D (warehouse-3d/)
+#### Middleware de errores: `backend/src/middleware/error-handler.js`
 
-| Componente          | Archivo               | Descripción                                    |
-|---------------------|-----------------------|------------------------------------------------|
-| `WarehouseScene`    | `warehouse-scene.jsx` | Escena Three.js completa: racks, cajas, cursor |
-| `WarehousePanel`    | `warehouse-panel.jsx` | Wrapper con overlays UI, info panel, toolbar   |
+Captura errores lanzados en rutas y devuelve `{ error: mensaje }` con status code apropiado.
 
-#### Layout
+#### Módulos de rutas (9 archivos)
 
-| Componente      | Archivo              | Descripción                                  |
-|-----------------|----------------------|----------------------------------------------|
-| `AppShell`      | `app-shell.jsx`      | Layout principal: Sidebar + Topbar + content  |
-| `Sidebar`       | `sidebar.jsx`        | Menú lateral con navegación por rol          |
-| `Topbar`        | `topbar.jsx`         | Barra superior con título y campana          |
-| `ToastContainer`| `toast-container.jsx`| Notificaciones flotantes                     |
+| Archivo | Endpoints | Descripción |
+|---|---|---|
+| `auth.routes.js` | `POST /login` | Autenticación por email + password. Validación de cuenta activa. |
+| `insumos.routes.js` | `GET /`, `POST /`, `PUT /:id` | CRUD de catálogo de insumos. |
+| `lotes.routes.js` | `GET /`, `POST /` | Listado con filtros (insumo, pasillo, rack, nivel, estado). Creación con JOIN completo. |
+| `requerimientos.routes.js` | `GET /`, `GET /:id`, `POST /`, `POST /:id/atender` | Listado con subconsultas JSON. Atención con transacción, locks FEFO, cálculo de estado. |
+| `usuarios.routes.js` | `GET /`, `POST /`, `PUT /:id`, `PATCH /:id/toggle-active` | CRUD completo con manejo de email duplicado (código 23505). |
+| `tareas.routes.js` | `GET /`, `POST /`, `PATCH /:id/toggle` | CRUD con filtro por asignado. Toggle pendiente↔completada. |
+| `alertas.routes.js` | `GET /`, `POST /atender` | Alertas computadas: JOIN insumos + lotes, HAVING SUM < punto_reorden. |
+| `dashboard.routes.js` | `GET /` | 5 KPIs: insumos registrados, lotes activos, stock crítico, reqs pendientes, alertas activas. |
+| `ubicaciones.routes.js` | `GET /` | Listado ordenado de 120 ubicaciones. |
 
-### Puntos de entrada al sistema
+#### Lógica clave — Atención de requerimiento (`requerimientos.routes.js`)
 
-1. **`index.html`**: Carga el módulo `src/main.jsx`.
-2. **`src/main.jsx`**: Renderiza `<App />` dentro de `<StrictMode>`.
-3. **`src/App.jsx`**: Provee el contexto global y configura el router.
+```javascript
+router.post("/:id/atender", async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    // Bloqueo fila del requerimiento
+    const reqActual = await client.query(
+      "SELECT * FROM requerimientos WHERE id = $1 FOR UPDATE", [id]
+    );
+    // Por cada insumo a despachar:
+    for (const salida of salidas) {
+      // Buscar lotes FEFO (ORDER BY vencimiento ASC)
+      const lotes = await client.query(`
+        SELECT id, cantidad FROM lotes_inventario
+        WHERE insumo_id = $1 AND cantidad > 0
+        ORDER BY vencimiento ASC FOR UPDATE
+      `, [insumo_id]);
+      // Descontar inventario FIFO por lote
+      for (const lote of lotes.rows) {
+        const tomar = Math.min(lote.cantidad, pendiente);
+        await client.query("UPDATE lotes_inventario SET cantidad = cantidad - $1 WHERE id = $2", [tomar, lote.id]);
+        pendiente -= tomar;
+      }
+      // Actualizar atendido acumulado
+      await client.query("UPDATE requerimiento_insumos SET atendido = atendido + $1 WHERE ...", ...);
+    }
+    // Calcular nuevo estado
+    const allComplete = insumosReq.rows.every(r => Number(r.atendido) >= Number(r.cantidad));
+    const nuevoEstado = allComplete ? "atendido" : "parcial";
+    await client.query("UPDATE requerimientos SET estado = $1 WHERE id = $2", [nuevoEstado, id]);
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+  }
+});
+```
 
 ---
 
-## 7. APIs / Servicios Web
+## 7. APIs o Servicios Web
 
-### Estado actual
+### Base URL
 
-El frontend opera completamente con datos mock locales. No hay endpoints de API implementados. La librería **Axios** está instalada y lista para ser utilizada cuando se desarrolle el backend.
+```
+http://localhost:3000/api
+```
 
-### Endpoints planificados
+### Endpoints implementados
 
-| Método | Ruta                              | Descripción                          |
-|--------|-----------------------------------|--------------------------------------|
-| POST   | `/api/auth/login`                 | Iniciar sesión                       |
-| POST   | `/api/auth/logout`                | Cerrar sesión                        |
-| GET    | `/api/usuarios`                   | Listar usuarios                      |
-| POST   | `/api/usuarios`                   | Crear usuario                        |
-| PUT    | `/api/usuarios/:id`               | Actualizar usuario                   |
-| PATCH  | `/api/usuarios/:id/toggle`        | Activar/desactivar usuario           |
-| GET    | `/api/insumos`                    | Listar insumos                       |
-| POST   | `/api/insumos`                    | Crear insumo                         |
-| PUT    | `/api/insumos/:id`                | Actualizar insumo                    |
-| GET    | `/api/inventario`                 | Listar inventario (con filtros)      |
-| POST   | `/api/inventario`                 | Registrar nuevo lote                 |
-| GET    | `/api/requerimientos`             | Listar requerimientos                |
-| POST   | `/api/requerimientos`             | Crear requerimiento                  |
-| POST   | `/api/requerimientos/:id/atender` | Atender requerimiento (despacho)     |
-| GET    | `/api/alertas`                    | Listar alertas activas               |
-| POST   | `/api/alertas/:id/atender`        | Atender alerta                       |
-| GET    | `/api/tareas`                     | Listar tareas                        |
-| POST   | `/api/tareas`                     | Asignar tarea                        |
-| PATCH  | `/api/tareas/:id/complete`        | Completar tarea                      |
-| GET    | `/api/ubicaciones`                | Listar ubicaciones                    |
-| GET    | `/api/dashboard/kpi`              | KPIs para dashboard                  |
+#### Autenticación
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| POST | `/auth/login` | Iniciar sesión | `email`, `password` | `{ user: { id, nombre, email, rol, activo } }` |
+
+Códigos: `200 OK`, `401 Credenciales inválidas`, `403 Usuario inactivo`.
+
+#### Insumos
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| GET | `/insumos` | Listar todos | — | `[{ id, nombre, proveedor, unidad, punto_reorden, lead_time }]` |
+| POST | `/insumos` | Crear insumo | `nombre`, `proveedor`, `unidad`, `punto_reorden`, `lead_time` | `201 { id, ... }` |
+| PUT | `/insumos/:id` | Actualizar insumo | (mismos campos) | `{ id, ... }` |
+
+#### Lotes de inventario
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| GET | `/lotes` | Listar lotes | `?insumo_id&pasillo&rack&nivel&estado` | `[{ id, insumo_id, codigo_lote, cantidad, vencimiento, pasillo, rack, nivel, estado, ... }]` |
+| POST | `/lotes` | Crear lote | `insumo_id`, `cantidad`, `vencimiento`, `ubicacion_id`, `proveedor`, `registrado_por_id` | `201 { id, ... }` |
+
+#### Requerimientos
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| GET | `/requerimientos` | Listar todos | — | `[{ id, numero, insumos[], atenciones[], ... }]` |
+| GET | `/requerimientos/:id` | Obtener uno | — | `{ id, numero, insumos[], atenciones[], ... }` |
+| POST | `/requerimientos` | Crear | `numero`, `fecha_solicitud`, `registrado_por_id`, `insumos[]` | `201 { id, ... }` |
+| POST | `/requerimientos/:id/atender` | Atender (despachar) | `salidas[{insumo_id, cantidad}]`, `atendido_por_id` | `{ mensaje, estado }` |
+
+La atención de requerimiento ejecuta en una **transacción**:
+1. Bloquea la fila del requerimiento (`SELECT ... FOR UPDATE`).
+2. Por cada insumo, busca lotes ordenados por vencimiento ASC (FEFO).
+3. Descuenta inventario FIFO por lote.
+4. Acumula en `requerimiento_insumos.atendido`.
+5. Inserta registro en `requerimiento_atenciones` con detalle JSONB.
+6. Calcula nuevo estado: `"atendido"` (todo completo), `"parcial"` (progreso), o `"pendiente"`.
+7. Commit o Rollback ante error.
+
+#### Usuarios
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| GET | `/usuarios` | Listar usuarios | — | `[{ id, nombre, email, rol, activo }]` |
+| POST | `/usuarios` | Crear usuario | `nombre`, `email`, `password`, `rol` | `201 { id, ... }` |
+| PUT | `/usuarios/:id` | Actualizar | `nombre`, `password?`, `rol` | `{ id, ... }` |
+| PATCH | `/usuarios/:id/toggle-active` | Activar/Desactivar | — | `{ id, ..., activo }` |
+
+#### Tareas
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| GET | `/tareas` | Listar tareas | `?asignado_a_id` | `[{ id, descripcion, estado, asignado_a_nombre, ... }]` |
+| POST | `/tareas` | Crear tarea | `asignado_a_id`, `descripcion` | `201 { id, ... }` |
+| PATCH | `/tareas/:id/toggle` | Toggle estado | — | `{ id, estado }` |
+
+#### Alertas
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| GET | `/alertas` | Alertas computadas | — | `[{ insumo_id, insumo, stock_actual, punto_reorden, deficit, atendida_id, ... }]` |
+| POST | `/alertas/atender` | Atender alerta | `insumo_id`, `atendido_por_id` | `201 { id, fecha, ... }` |
+
+Las alertas son **computadas dinámicamente**: JOIN entre `insumos` y `lotes_inventario`, agrupado por insumo, con `HAVING SUM(cantidad) < punto_reorden`.
+
+#### Dashboard
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| GET | `/dashboard` | KPIs del sistema | — | `{ insumosRegistrados, lotesActivosCount, stockCritico, reqsPendientes, alertasActivas }` |
+
+#### Ubicaciones
+
+| Método | Ruta | Descripción | Parámetros | Respuesta |
+|---|---|---|---|---|
+| GET | `/ubicaciones` | Listar ubicaciones | — | `[{ id, pasillo, rack, nivel }]` (120 registros) |
 
 ---
 
@@ -540,31 +660,34 @@ El frontend opera completamente con datos mock locales. No hay endpoints de API 
 
 ### Control de accesos y roles
 
-El sistema implementa un modelo básico de control de acceso basado en roles (RBAC):
+El sistema implementa un modelo de control de acceso basado en roles (RBAC):
 
-| Rol         | Nivel de acceso       |
-|-------------|-----------------------|
-| `jefe`      | Administrativo total  |
-| `supervisor`| Operaciones y alertas |
-| `operario`  | Tareas operativas     |
+| Rol | Nivel de acceso |
+|---|---|
+| `jefe` | Administrativo total: dashboard, usuarios, insumos, tareas |
+| `supervisor` | Operaciones: requerimientos (crear), alertas, inventario |
+| `operario` | Tareas operativas: ingreso de lotes, atención de requerimientos |
 
-**Mecanismos de seguridad actuales (frontend)**:
+**Mecanismos de seguridad implementados:**
 
 1. **Ruteo protegido**: `PrivateRoute` en `App.jsx` redirige al login si no hay `currentUser`.
-2. **Guard por rol**: `AppShell` recibe `allowedRoles` y redirige a `/inicio` si el rol no está autorizado.
-3. **Navegación filtrada**: `Sidebar` solo muestra los ítems permitidos según `NAV_BY_ROLE[role]`.
+2. **Guard por rol**: `AppShell` recibe `allowedRoles` y bloquea acceso no autorizado.
+3. **Navegación filtrada**: `Sidebar` solo muestra ítems permitidos según `NAV_BY_ROLE`.
+4. **Autenticación backend**: Validación de credenciales contra BD en `POST /api/auth/login`.
+5. **Validación de cuenta activa**: Usuarios inactivos reciben `403 Forbidden`.
+6. **Consultas parametrizadas**: Todas las queries SQL usan `$1, $2, ...` para prevenir SQL injection.
+7. **Transacciones con bloqueo**: `SELECT ... FOR UPDATE` en atención de requerimientos para evitar condiciones de carrera.
+8. **CORS habilitado**: Solo permite orígenes configurados.
 
-### Seguridad planificada (backend)
+### Seguridad planificada
 
-| Medida                 | Implementación prevista           |
-|------------------------|-----------------------------------|
-| Hash de contraseñas    | bcrypt                            |
-| JWT                    | Autenticación stateless           |
-| HTTPS                  | Certificado SSL/TLS               |
-| Validación de entrada  | Express middleware                 |
-| SQL Injection          | Consultas parametrizadas / ORM    |
-| CORS                   | Configuración de orígenes         |
-| Rate limiting          | express-rate-limit                |
+| Medida | Estado |
+|---|---|
+| Hash de contraseñas (bcrypt) | Pendiente |
+| Autenticación JWT | Pendiente |
+| HTTPS | Pendiente (configurable en producción) |
+| Validación de entrada con Express | Parcial (implementada en rutas críticas) |
+| Rate limiting | Pendiente |
 
 ---
 
@@ -572,30 +695,51 @@ El sistema implementa un modelo básico de control de acceso basado en roles (RB
 
 ### Estado actual
 
-El sistema no cuenta con pruebas automatizadas en esta versión. Se realizaron pruebas manuales de las siguientes funcionalidades:
+El sistema no cuenta con pruebas automatizadas en esta versión. Se realizaron pruebas funcionales manuales de todas las funcionalidades del frontend y los endpoints del backend.
 
-| Funcionalidad             | Tipo de prueba           | Resultado |
-|---------------------------|--------------------------|-----------|
-| Inicio de sesión          | Funcional (manual)       | OK        |
-| Validación de roles       | Funcional (manual)       | OK        |
-| CRUD de insumos           | Funcional (manual)       | OK        |
-| Registro de lote          | Funcional + validación   | OK        |
-| Atención de requerimiento | Funcional + FEFO         | OK        |
-| Atención parcial          | Funcional (manual)       | OK        |
-| Filtros de inventario     | Funcional (manual)       | OK        |
-| Visualización 3D          | Funcional (manual)       | OK        |
-| Navegación por teclado 3D | Funcional (manual)       | OK        |
-| Dashboard                 | Funcional (manual)       | OK        |
-| Alertas dinámicas         | Funcional (manual)       | OK        |
-| CRUD de usuarios          | Funcional + validación   | OK        |
-| Asignación de tareas      | Funcional (manual)       | OK        |
-| Build de producción       | Compilación (build)      | OK        |
+### Pruebas de frontend
+
+| Funcionalidad | Tipo de prueba | Resultado |
+|---|---|---|
+| Inicio de sesión | Funcional (manual) | OK |
+| Validación de roles | Funcional (manual) | OK |
+| CRUD de insumos | Funcional + validación | OK |
+| Registro de lote | Funcional + validación | OK |
+| Atención de requerimiento | Funcional + FEFO | OK |
+| Atención parcial | Funcional (manual) | OK |
+| Filtros de inventario | Funcional (manual) | OK |
+| Visualización 3D | Funcional (manual) | OK |
+| Dashboard | Funcional (manual) | OK |
+| Alertas dinámicas | Funcional (manual) | OK |
+| CRUD de usuarios | Funcional + validación | OK |
+| Asignación de tareas | Funcional (manual) | OK |
+| Build de producción | Compilación (build) | OK |
+
+### Pruebas de backend (API)
+
+| Endpoint | Método | Prueba | Resultado |
+|---|---|---|---|
+| `/api/auth/login` | POST | Login correcto → 200 + user | OK |
+| `/api/auth/login` | POST | Credenciales inválidas → 401 | OK |
+| `/api/auth/login` | POST | Usuario inactivo → 403 | OK |
+| `/api/insumos` | GET | Listar insumos → 200 + array | OK |
+| `/api/insumos` | POST | Crear insumo → 201 | OK |
+| `/api/lotes` | GET | Listar con filtros → 200 | OK |
+| `/api/lotes` | POST | Crear lote → 201 | OK |
+| `/api/requerimientos` | GET | Listar con insumos y atenciones → 200 | OK |
+| `/api/requerimientos/:id/atender` | POST | Atención parcial → transacción commit | OK |
+| `/api/requerimientos/:id/atender` | POST | Atención completa → estado "atendido" | OK |
+| `/api/usuarios` | POST | Email duplicado → 409 | OK |
+| `/api/tareas/:id/toggle` | PATCH | Toggle estado → 200 | OK |
+| `/api/alertas` | GET | Alerta dinámica → solo stock < ROP | OK |
+| `/api/dashboard` | GET | 5 KPIs calculados → 200 | OK |
 
 ### Herramientas previstas para el futuro
 
 - **Vitest** — Pruebas unitarias para funciones utilitarias y store.
 - **React Testing Library** — Pruebas de componentes.
-- **Playwright / Cypress** — Pruebas end-to-end.
+- **Supertest** — Pruebas de integración de API.
+- **Playwright** — Pruebas end-to-end.
 
 ---
 
@@ -607,32 +751,40 @@ El sistema no cuenta con pruebas automatizadas en esta versión. Se realizaron p
 # 1. Obtener los últimos cambios
 git pull origin main
 
-# 2. Actualizar dependencias
-cd frontend
-npm install
+# 2. Actualizar dependencias (frontend y backend)
+cd frontend && npm install
+cd ../backend && npm install
 
-# 3. Verificar que no haya errores de compilación
-npm run build
+# 3. Ejecutar migraciones de BD (si las hay)
+psql -U postgres -d wms_db -f database/migrations/XXX.sql
 
-# 4. Ejecutar linter
+# 4. Verificar compilación del frontend
+cd ../frontend && npm run build
+
+# 5. Ejecutar linter
 npm run lint
+
+# 6. Verificar health check del backend
+curl http://localhost:3000
 ```
 
 ### Procedimientos para solucionar fallas comunes
 
-| Problema                         | Causa probable                   | Solución                                      |
-|----------------------------------|----------------------------------|-----------------------------------------------|
-| Error de compilación             | Dependencia desactualizada       | `npm install` o borrar `node_modules` + `npm install` |
-| Error de dependencia             | Versión incompatible             | Verificar `package.json` y actualizar         |
-| La escena 3D no se renderiza     | WebGL no disponible              | Verificar navegador / habilitar WebGL         |
-| Rutas no funcionan               | Router mal configurado           | Verificar `App.jsx` y `nav.js`                |
-| Estado no persiste               | No hay backend / recarga         | (Normal en versión mock)                      |
+| Problema | Causa probable | Solución |
+|---|---|---|
+| Error de compilación frontend | Dependencia desactualizada | `npm install` o borrar `node_modules` + `npm install` |
+| Error "ECONNREFUSED" en backend | PostgreSQL no está corriendo | `sudo systemctl start postgresql` |
+| Error de conexión a BD | DATABASE_URL incorrecta | Verificar `backend/.env` |
+| La escena 3D no se renderiza | WebGL no disponible | Verificar navegador / habilitar WebGL |
+| 401 en login | Credenciales inválidas | Verificar email y contraseña en BD |
+| 500 en atención de requerimiento | Error en transacción | Revisar logs del backend |
+| Puerto 3000 ocupado | Otro proceso usando el puerto | Cambiar `PORT` en `.env` |
 
 ### Documentación de cambios (Changelog)
 
-| Versión | Fecha       | Cambios principales                                               |
-|---------|-------------|-------------------------------------------------------------------|
-| 1.0.0   | Julio 2026  | Versión inicial: frontend completo con datos mock                 |
+| Versión | Fecha | Cambios principales |
+|---|---|---|
+| 1.0.0 | Julio 2026 | Versión inicial: frontend + backend + BD operativos |
 
 ---
 
@@ -640,7 +792,7 @@ npm run lint
 
 ### Configuración de Vite (`vite.config.js`)
 
-```js
+```javascript
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -650,54 +802,80 @@ export default defineConfig({
 })
 ```
 
-### Configuración de ESLint (`eslint.config.js`)
-
-Utiliza el formato flat config de ESLint v10 con plugins para React, React Hooks y React Refresh.
-
-### Tema de Tailwind CSS (extracto de `index.css`)
+### Tema de Tailwind CSS (`index.css`)
 
 ```css
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
 @theme inline {
-  --color-background: #ffffff;
-  --color-foreground: #2a211d;
-  --color-primary: #c8922a;
-  --color-brand: #6b2d1f;
-  --color-success: #27ae60;
-  --color-warning: #e67e22;
-  --color-critical: #c0392b;
-  --color-info: #2563eb;
-  --color-sidebar: #6b2d1f;
-  --color-sidebar-primary: #c8922a;
-  --radius-sm: calc(0.5rem * 0.5);
-  --radius-md: 0.5rem;
-  --radius-lg: calc(0.5rem * 1);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+  /* Colores corporativos Qori Foods */
+  --color-background: var(--background);
+  --color-foreground: var(--text-primary);
+  --color-primary: var(--accent);
+  --color-brand: var(--sidebar-bg);
+  --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-primary: var(--sidebar-accent);
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+}
+
+:root {
+  --background: #f8f8f7;
+  --text-primary: #1c1c1a;
+  --text-secondary: #52524e;
+  --text-tertiary: #8f8f8a;
+  --surface: #ffffff;
+  --surface-raised: #f4f4f3;
+  --surface-overlay: #efefed;
+  --border-subtle: #e8e8e6;
+  --border-default: #d4d4d0;
+  --accent: #b07d2a;
+  --accent-hover: #9a6d22;
+  --sidebar-bg: #1e1208;
+  --sidebar-text: #c8bfb0;
+  --sidebar-accent: #c8922a;
+  --success: #2d6a4f;
+  --warning: #92520a;
+  --danger: #9b2c2c;
+  --info: #1e4d7b;
 }
 ```
 
-### Datos mock (estructura completa en `frontend/src/lib/data.js`)
+### Configuración de ESLint (`eslint.config.js`)
 
-| Exportación   | Tipo   | Cantidad | Propósito                     |
-|---------------|--------|----------|-------------------------------|
-| `USERS`       | array  | 5        | Usuarios de prueba            |
-| `INSUMOS`     | array  | 6        | Catálogo de materias primas   |
-| `UBICACIONES` | array  | 120      | Ubicaciones físicas           |
-| `INVENTORY`   | array  | 30       | Lotes de inventario           |
-| `REQUIREMENTS`| array  | 4        | Requerimientos de producción  |
-| `ALERTS`      | array  | 2        | Alertas de stock bajo         |
-| `TASKS`       | array  | 5        | Tareas asignadas              |
+Formato flat config de ESLint v10 con plugins para React, React Hooks y React Refresh.
+
+### Datos de semilla (`database/db.sql`)
+
+| Tabla | Registros | Propósito |
+|---|---|---|
+| `usuarios` | 3 | María Flores (jefe), Pedro Salas (supervisor), Carlos Quispe (operario) |
+| `insumos` | 10 | Catálogo de materias primas con proveedores |
+| `ubicaciones` | 120 | 4 pasillos × 6 racks × 5 niveles |
+| `lotes_inventario` | 30 | Lotes con diversos estados y vencimientos |
+| `requerimientos` | 7 | Pedidos de producción (pendientes, parciales, atendidos) |
+| `alertas_atendidas` | 2 | Historial de reabastecimiento |
+| `tareas` | 10 | Tareas asignadas al personal |
 
 ### Logs de ejemplo (compilación exitosa)
 
 ```
 vite v8.0.16 building client environment for production...
-transforming...✓ 2329 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                     0.62 kB │ gzip:   0.38 kB
-dist/assets/index-D8rDVGlk.css     41.44 kB │ gzip:   7.56 kB
-dist/assets/index-CE-tZkqt.js   1,426.43 kB │ gzip: 401.30 kB
-✓ built in 2.56s
+✓ 2381 modules transformed.
+✓ built in 1.13s
+
+Servidor backend:
+> nodemon src/index.js
+Servidor corriendo en http://localhost:3000
+```
+
+### Health check de API
+
+```
+GET http://localhost:3000/
+→ 200 { message: "WMS Qori Foods API funcionando", db: "conectada", serverTime: "..." }
 ```
