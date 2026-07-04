@@ -84,12 +84,13 @@ export function AppProvider({ children }) {
 
     await api.atenderRequerimiento(reqId, { salidas, atendido_por_id: atendidoPor.id })
 
-    const [lotes, reqs] = await Promise.all([api.getLotes(), api.getRequerimientos()])
+    const [lotes, reqs, alertas] = await Promise.all([api.getLotes(), api.getRequerimientos(), api.getAlertas()])
     setInventory(lotes.map((lot) => ({
       ...lot,
       ubicacion: `Pasillo ${lot.pasillo} – Rack ${lot.rack} – Nivel ${lot.nivel}`,
     })))
     setRequirements(reqs)
+    setAlerts(alertas)
   }, [])
 
   const addRequirement = useCallback(async (req) => {
@@ -153,6 +154,8 @@ export function AppProvider({ children }) {
       ...created,
       ubicacion: `Pasillo ${created.pasillo} – Rack ${created.rack} – Nivel ${created.nivel}`,
     }, ...prev])
+    const updated = await api.getAlertas()
+    setAlerts(updated)
   }, [])
 
   // ---- Insumos ----
