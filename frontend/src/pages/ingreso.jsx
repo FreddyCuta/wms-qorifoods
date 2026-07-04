@@ -21,6 +21,7 @@ export default function IngresoPage() {
   const [rack, setRack] = useState("");
   const [nivel, setNivel] = useState("");
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [show3DPicker, setShow3DPicker] = useState(false);
 
   const handleSelectLocation3D = useCallback(({ pasillo: p, rack: r, nivel: n }) => {
@@ -45,7 +46,7 @@ export default function IngresoPage() {
     return `LOT-2026-${String(maxNum + 1).padStart(4, "0")}`;
   }, [inventory]);
 
-  const insumoObj = insumos.find((i) => i.id === insumo);
+  const insumoObj = insumos.find((i) => i.id === Number(insumo));
   const proveedor = insumoObj?.proveedor ?? "";
   const unidad = insumoObj?.unidad ?? "kg";
   const ubicacion = pasillo && rack && nivel ? `Pasillo ${pasillo} – Rack ${rack} – Nivel ${nivel}` : "";
@@ -67,11 +68,13 @@ export default function IngresoPage() {
     const ubicacionMatch = ubicaciones.find((u) => u.pasillo === pasillo && String(u.rack) === String(rack) && String(u.nivel) === String(nivel));
     if (!ubicacionMatch) { setErrors({ ubicacion: "Ubicación no encontrada en la base de datos." }); return; }
 
+    setSubmitting(true);
     try {
       await addLot({ insumoId: insumo, cantidad: Number(cantidad), vencimiento, ubicacionId: ubicacionMatch.id, proveedor, registradoPorId: currentUser.id });
       reset();
       addToast("Lote registrado correctamente.");
     } catch { addToast("Error al registrar el lote", "error"); }
+    finally { setSubmitting(false); }
   }
 
   return (
@@ -163,7 +166,7 @@ export default function IngresoPage() {
 
         <div className="mt-4 flex items-center justify-end gap-2">
           <ActionButton variant="ghost" size="sm" type="button" onClick={reset}>Cancelar</ActionButton>
-          <ActionButton type="submit">Registrar Ingreso</ActionButton>
+          <ActionButton type="submit" disabled={submitting}>{submitting ? "Registrando..." : "Registrar Ingreso"}</ActionButton>
         </div>
       </form>
     </AppShell>

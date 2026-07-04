@@ -45,17 +45,17 @@ export default function InventarioPage() {
 
   const insumosData = useMemo(() => {
     const grouped = groupByInsumo(data);
-    return grouped.map(([key, lots]) => {
-      const ins = insumos.find((i) => i.id === key || i.nombre === key);
-      const insumo = ins?.nombre || key;
+    const lotMap = new Map(grouped);
+    return insumos.map((ins) => {
+      const lots = lotMap.get(ins.id) || [];
       const totalQty = lots.reduce((sum, l) => sum + l.cantidad, 0);
-      const reorderPoint = ins?.puntoReorden || 0;
-      const unidad = lots[0]?.unidad || "kg";
+      const reorderPoint = ins.puntoReorden || 0;
+      const unidad = ins.unidad || "kg";
       let statusColor = "green";
       let statusText = "Normal";
       if (totalQty === 0) { statusColor = "red"; statusText = "Agotado"; }
       else if (totalQty <= reorderPoint) { statusColor = "amber"; statusText = "Stock bajo"; }
-      return { insumo, lots, totalQty, unidad, reorderPoint, statusColor, statusText };
+      return { insumo: ins.nombre, lots, totalQty, unidad, reorderPoint, statusColor, statusText };
     });
   }, [data, insumos]);
 
@@ -151,7 +151,7 @@ export default function InventarioPage() {
         )}
       </div>
 
-      <LotesDrawer insumo={selectedInsumo} lots={data.filter((l) => (l.insumoId || l.insumo) === selectedInsumo || l.insumo === selectedInsumo)} onClose={() => setSelectedInsumo(null)} />
+      <LotesDrawer insumo={selectedInsumo} lots={data.filter((l) => l.insumo === selectedInsumo)} onClose={() => setSelectedInsumo(null)} />
     </AppShell>
   );
 }

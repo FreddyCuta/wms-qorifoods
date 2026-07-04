@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trash2, Plus, AlertTriangle } from "lucide-react";
 import { useApp } from "../lib/store.jsx";
@@ -20,14 +20,22 @@ function calcStock(inventory) {
 export default function NuevoRequerimientoPage() {
   const { addToast, addRequirement, currentUser, insumos, inventory, requirements } = useApp();
   const navigate = useNavigate();
-  const [numero, setNumero] = useState("");
-  const [fecha, setFecha] = useState("");
-  const primerInsumo = insumos[0];
-  const segundoInsumo = insumos[1];
-  const [rows, setRows] = useState([
-    { id: "r1", insumo: primerInsumo?.nombre || "", insumoId: primerInsumo?.id || "", cantidad: "500" },
-    { id: "r2", insumo: segundoInsumo?.nombre || "", insumoId: segundoInsumo?.id || "", cantidad: "300" },
-  ]);
+
+  const reqNumero = useMemo(() => {
+    const maxNum = requirements.reduce((max, r) => {
+      const match = r.numero.match(/REQ-(\d+)/);
+      return match ? Math.max(max, parseInt(match[1], 10)) : max;
+    }, 0);
+    return `REQ-${String(maxNum + 1).padStart(3, "0")}`;
+  }, [requirements]);
+
+  const today = new Date().toISOString().split("T")[0];
+  const [fecha, setFecha] = useState(today);
+  const rowDefaults = (ins) => ins.length >= 2
+    ? [{ id: "r1", insumo: ins[0].nombre, insumoId: ins[0].id, cantidad: "" }, { id: "r2", insumo: ins[1].nombre, insumoId: ins[1].id, cantidad: "" }]
+    : [];
+
+  const [rows, setRows] = useState(() => rowDefaults(insumos));
   const [submitted, setSubmitted] = useState(false);
 
   const stockPorInsumo = calcStock(inventory);
@@ -35,30 +43,33 @@ export default function NuevoRequerimientoPage() {
   const insumoNameMap = {};
   insumos.forEach((i) => { insumoUnitMap[i.id] = i.unidad; insumoNameMap[i.id] = i.nombre; });
 
-  const duplicateNumero = requirements.some((r) => r.numero === numero.trim());
   const noItems = rows.length === 0;
-  const numeroError = submitted
-    ? duplicateNumero ? "Ya existe un requerimiento registrado con ese número. Verifique el documento físico."
-      : !numero.trim() ? "Este campo es obligatorio." : undefined
-    : undefined;
 
   function updateRow(id, patch) { setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r))); }
+
+  function getStockError(row) {
+    const key = row.insumoId || row.insumo;
+    const stockVal = key ? (stockPorInsumo[key] ?? null) : null;
+    return submitted && stockVal !== null && Number(row.cantidad) > stockVal
+      ? `Stock insuficiente. Disponible: ${qty(stockVal, insumoUnitMap[row.insumoId] || "kg")}`
+      : null;
+  }
+
+  const hasAnyError = submitted && (
+    noItems || rows.some((r) => !r.cantidad || Number(r.cantidad) <= 0 || getStockError(r))
+  );
 
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitted(true);
-    const hasQtyError = rows.some((r) => !r.cantidad || Number(r.cantidad) <= 0);
-    if (!numero.trim() || duplicateNumero || noItems || hasQtyError) return;
-
-    const hoy = new Date();
-    const fechaSolicitud = fecha ? fecha.split("/").reverse().join("-") : `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+    if (noItems || rows.some((r) => !r.cantidad || Number(r.cantidad) <= 0 || getStockError(r))) return;
 
     try {
       await addRequirement({
-        numero: numero.trim(), fechaSolicitud, registrado_por_id: currentUser.id,
+        numero: reqNumero, fechaSolicitud: fecha, registrado_por_id: currentUser.id,
         insumos: rows.map((r) => ({ insumo: r.insumo, insumoId: r.insumoId, cantidad: Number(r.cantidad), unidad: insumoUnitMap[r.insumoId] || "kg", stock: stockPorInsumo[r.insumoId || r.insumo] || 0 })),
       });
-      addToast("Requerimiento registrado correctamente.");
+      addToast(`Requerimiento ${reqNumero} registrado correctamente.`);
       navigate("/requerimientos");
     } catch { addToast("Error al registrar el requerimiento", "error"); }
   }
@@ -69,11 +80,11 @@ export default function NuevoRequerimientoPage() {
         <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-3">Datos generales</h2>
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
-            <Field label="N° de requerimiento" error={numeroError}>
-              <TextInput value={numero} invalid={!!numeroError} onChange={(e) => setNumero(e.target.value)} placeholder="Ej: REQ-048" />
+            <Field label="N° de requerimiento">
+              <TextInput value={reqNumero} readOnly disabled />
             </Field>
             <Field label="Fecha del pedido">
-              <TextInput value={fecha} onChange={(e) => setFecha(e.target.value)} placeholder="DD/MM/YYYY" />
+              <TextInput type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
             </Field>
           </div>
 
@@ -93,6 +104,7 @@ export default function NuevoRequerimientoPage() {
                   const key = row.insumoId || row.insumo;
                   const stockVal = key ? (stockPorInsumo[key] ?? null) : null;
                   const qtyError = submitted && (!row.cantidad || Number(row.cantidad) <= 0);
+                  const stockError = getStockError(row);
                   const noStock = stockVal !== null && stockVal === 0;
                   return (
                     <tr key={row.id} className="align-top">
@@ -103,8 +115,9 @@ export default function NuevoRequerimientoPage() {
                         </SelectInput>
                       </td>
                       <td className="px-2 py-1.5">
-                        <TextInput type="number" value={row.cantidad} invalid={qtyError} onChange={(e) => updateRow(row.id, { cantidad: e.target.value })} />
+                        <TextInput type="number" value={row.cantidad} invalid={!!(qtyError || stockError)} onChange={(e) => updateRow(row.id, { cantidad: e.target.value })} />
                         {qtyError && <p className="text-[11px] text-[var(--danger)]" style={{ marginTop: '3px' }}>La cantidad debe ser mayor a cero.</p>}
+                        {stockError && <p className="text-[11px] text-[var(--danger)]" style={{ marginTop: '3px' }}>{stockError}</p>}
                       </td>
                       <td className="px-2 py-1.5">
                         {stockVal !== null ? (

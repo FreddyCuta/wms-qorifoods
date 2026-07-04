@@ -51,7 +51,7 @@ export default function RequerimientosPage() {
                 <td className="px-3 py-2.5 font-medium text-[var(--text-primary)]">{r.numero}</td>
                 <td className="px-3 py-2.5 text-[var(--text-secondary)]">{r.fechaSolicitud}</td>
                 <td className="px-3 py-2.5 text-[var(--text-secondary)]">{r.fechaRegistro}</td>
-                <td className="px-3 py-2.5 text-[var(--text-primary)]">{r.registradoPor}</td>
+                <td className="px-3 py-2.5 text-[var(--text-primary)]">{r.registradoPorNombre}</td>
                 <td className="px-3 py-2.5 text-[var(--text-primary)]">{r.insumos.length} {r.insumos.length === 1 ? "insumo" : "insumos"}</td>
                 <td className="px-3 py-2.5">{statusBadge(r.estado)}</td>
                 <td className="px-3 py-2.5 text-right">
