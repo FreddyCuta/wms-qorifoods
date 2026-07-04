@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { X, Package, MapPin, Calendar, User, AlertTriangle, RotateCcw } from "lucide-react";
+import { X, Package, MapPin, Calendar, User, AlertTriangle, RotateCcw, Layers } from "lucide-react";
 import { useApp } from "../lib/store.jsx";
 import { AppShell } from "../components/app-shell.jsx";
 import { WarehouseScene } from "../components/warehouse-3d/warehouse-scene.jsx";
@@ -58,6 +58,26 @@ function DetailRow({ icon, label, children }) {
   );
 }
 
+function FreeUbicacionesPanel({ ubicaciones, onClose }) {
+  return (
+    <div className="absolute left-4 top-16 z-20 flex w-56 flex-col overflow-hidden rounded-md border border-[var(--border-default)] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-3 py-2.5">
+        <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Ubicaciones libres ({ubicaciones.length})</h3>
+        <button type="button" onClick={onClose} className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)]"><X className="size-3.5" /></button>
+      </div>
+      <div className="max-h-[50vh] overflow-y-auto p-2">
+        <div className="space-y-px">
+          {ubicaciones.map((u) => (
+            <div key={`${u.pasillo}-${u.rack}-${u.nivel}`} className="rounded-sm px-2 py-1 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]">
+              Pasillo {u.pasillo} – Rack {u.rack} – Nivel {u.nivel}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Toolbar({ onResetCamera }) {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-md border border-[var(--border-default)] bg-white/90 px-2.5 py-1.5 shadow-sm">
@@ -73,8 +93,14 @@ function Toolbar({ onResetCamera }) {
 export default function Almacen3dPage() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [resetKey, setResetKey] = useState(0);
-  const { activeAlertCount, pendingReqCount } = useApp();
+  const [showFreePanel, setShowFreePanel] = useState(false);
+  const { activeAlertCount, pendingReqCount, ubicaciones, inventory } = useApp();
   const [cursorInfo, setCursorInfo] = useState({ pasillo: "B", rack: 3, nivel: 3, ocupados: 0, libres: 5 });
+
+  const freeUbicaciones = useMemo(() => {
+    const occupied = new Set(inventory.map(i => i.ubicacion))
+    return ubicaciones.filter(u => !occupied.has(`Pasillo ${u.pasillo} – Rack ${u.rack} – Nivel ${u.nivel}`))
+  }, [ubicaciones, inventory])
 
   const handleSelectBox = useCallback((item) => { setSelectedItem((prev) => (prev?.id === item.id ? null : item)); }, []);
   const handleCursorChange = useCallback((info) => { setCursorInfo(info); }, []);
@@ -88,6 +114,7 @@ export default function Almacen3dPage() {
         </Canvas>
 
         {selectedItem && <InfoPanel item={selectedItem} onClose={() => setSelectedItem(null)} />}
+        {showFreePanel && <FreeUbicacionesPanel ubicaciones={freeUbicaciones} onClose={() => setShowFreePanel(false)} />}
 
         <Toolbar onResetCamera={handleResetCamera} />
 
@@ -106,17 +133,22 @@ export default function Almacen3dPage() {
         <div className="absolute left-4 top-4 flex gap-2">
           <MiniStat value={activeAlertCount} label="Alertas" color={activeAlertCount > 0 ? "text-[var(--danger)]" : "text-[var(--text-primary)]"} />
           <MiniStat value={pendingReqCount} label="Req. pendientes" color={pendingReqCount > 0 ? "text-[var(--warning)]" : "text-[var(--text-primary)]"} />
+          <MiniStat value={freeUbicaciones.length} label="Ubic. libres" icon={Layers} color={showFreePanel ? "text-[var(--primary)]" : "text-[var(--text-primary)]"} onClick={() => setShowFreePanel((v) => !v)} />
         </div>
       </div>
     </AppShell>
   );
 }
 
-function MiniStat({ value, label, color }) {
+function MiniStat({ value, label, color, icon: Icon, onClick }) {
+  const Comp = onClick ? 'button' : 'div'
   return (
-    <div className="rounded-sm border border-[var(--border-subtle)] bg-white/80 px-2.5 py-1 shadow-sm">
-      <div className={cn("text-[16px] font-bold leading-none", color)}>{value}</div>
+    <Comp onClick={onClick} className={cn("rounded-sm border border-[var(--border-subtle)] bg-white/80 px-2.5 py-1 shadow-sm", onClick && "cursor-pointer transition-colors hover:bg-[var(--surface-raised)]")}>
+      <div className={cn("flex items-center gap-1 text-[16px] font-bold leading-none", color)}>
+        {Icon && <Icon className="size-3.5" />}
+        {value}
+      </div>
       <div className="text-[10px] text-[var(--text-tertiary)]">{label}</div>
-    </div>
+    </Comp>
   );
 }
